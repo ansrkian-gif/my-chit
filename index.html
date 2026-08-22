@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1B5E45" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="My Chit" />
+  <title>My Chit · ₹12,00,000</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --paper: #f3eee4;
+      --paper-2: #e8e0d2;
+      --card: #fffdf8;
+      --ink: #1c1916;
+      --muted: #6d6458;
+      --line: #ddd4c6;
+      --green: #1b5e45;
+      --green-2: #0f7a56;
+      --green-soft: #e5f3ec;
+      --stamp: #9b2c3a;
+      --stamp-soft: #f8e8ea;
+      --gold: #8a6d2f;
+      --gold-soft: #f4ebD4;
+      --shadow: 0 1px 0 rgba(28, 25, 22, 0.04);
+      --radius: 20px;
+      --nav-h: 72px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bot: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; }
+    body {
+      font-family: Figtree, "Segoe UI", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.4;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button, input, select { font-family: inherit; }
+
+    .app {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: calc(18px + var(--safe-top)) 16px calc(var(--nav-h) + var(--safe-bot) + 20px);
+    }
+
+    header.top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    h1 {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 28px;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+      margin-top: 2px;
+    }
+    .icon-btn {
+      width: 42px;
+      height: 42px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      border-radius: 14px;
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .due {
+      background: var(--stamp);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .due p { font-size: 13px; opacity: 0.85; }
+    .due h2 { font-size: 17px; font-weight: 700; }
+    .due button {
+      border: 0;
+      background: #fff;
+      color: var(--stamp);
+      font-weight: 700;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .hero {
+      background: var(--green);
+      color: #f4efe6;
+      border-radius: 24px;
+      padding: 22px 22px 20px;
+      margin-bottom: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -40px;
+      top: -50px;
+      width: 180px;
+      height: 180px;
+      border: 18px solid rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+    .hero .label { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.75; font-weight: 600; }
+    .hero .amount {
+      font-family: Fraunces, Georgia, serif;
+      font-size: clamp(32px, 8vw, 44px);
+      font-weight: 650;
+      letter-spacing: -0.03em;
+      margin: 6px 0 14px;
+    }
+    .bar {
+      height: 8px;
+      background: rgba(255,255,255,0.16);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .bar > span {
+      display: block;
+      height: 100%;
+      background: #d7ecc8;
+      border-radius: 99px;
+    }
+    .hero-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow);
+    }
+    .stat span { display: block; font-size: 12px; color: var(--muted); font-weight: 600; }
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      font-family: Fraunces, Georgia, serif;
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
+    .stat.profit strong { color: var(--green-2); }
+    .stat.paid strong { color: var(--stamp); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+    }
+    .card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .legend {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .chart-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    svg.chart { display: block; min-width: 520px; width: 100%; height: 180px; }
+
+    .months-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .month-pill {
+      flex: 0 0 auto;
+      min-width: 64px;
+      text-align: center;
+      padding: 10px 8px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .month-pill.paid { background: var(--green-soft); border-color: #b7d8c7; color: var(--green); }
+    .month-pill.due-pill { background: var(--stamp-soft); border-color: #e7b4bb; color: var(--stamp); }
+    .month-pill .n { display: block; font-family: Fraunces, Georgia, serif; font-size: 16px; }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line);
+      cursor: pointer;
+      background: none;
+      width: 100%;
+      text-align: left;
+      color: inherit;
+      border-left: 0;
+      border-right: 0;
+      border-top: 0;
+    }
+    .row:last-child { border-bottom: 0; padding-bottom: 0; }
+    .row:first-child { padding-top: 0; }
+    .row .d { font-weight: 700; font-size: 14px; }
+    .row .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .row .nums { text-align: right; }
+    .neg { color: var(--stamp); font-weight: 700; font-size: 14px; }
+    .pos { color: var(--green-2); font-weight: 700; font-size: 14px; }
+
+    .nav {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: calc(var(--nav-h) + var(--safe-bot));
+      padding: 8px 24px var(--safe-bot);
+      background: rgba(243, 238, 228, 0.94);
+      backdrop-filter: blur(12px);
+      border-top: 1px solid var(--line);
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-start;
+      z-index: 20;
+    }
+    .nav button {
+      border: 0;
+      background: none;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      min-width: 64px;
+      padding: 8px 8px 0;
+      cursor: pointer;
+    }
+    .nav button.active { color: var(--green); }
+    .nav .add-fab {
+      width: 56px;
+      height: 56px;
+      min-width: 56px;
+      margin-top: -22px;
+      border-radius: 50%;
+      background: var(--green);
+      color: #fff;
+      font-size: 28px;
+      font-weight: 500;
+      line-height: 1;
+      box-shadow: 0 8px 20px rgba(27, 94, 69, 0.28);
+    }
+
+    .page { display: none; }
+    .page.on { display: block; }
+
+    label.field { display: block; margin-bottom: 14px; }
+    label.field span {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    input, select {
+      width: 100%;
+      height: 52px;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 14px;
+      padding: 0 14px;
+      font-size: 16px;
+      color: var(--ink);
+    }
+    input:focus, select:focus {
+      outline: 2px solid var(--green);
+      outline-offset: 1px;
+    }
+    .hint { font-size: 12px; color: var(--muted); margin-top: -8px; margin-bottom: 14px; }
+    .calc-box {
+      background: var(--green-soft);
+      border: 1px solid #b7d8c7;
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .calc-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 3px 0;
+    }
+    .calc-row.main {
+      color: var(--green);
+      margin-top: 8px;
+      padding-top: 10px;
+      border-top: 1px solid #b7d8c7;
+      font-weight: 700;
+    }
+    .calc-row.main b {
+      font-family: Fraunces, Georgia, serif;
+      font-size: 26px;
+      font-weight: 650;
+      letter-spacing: -0.03em;
+    }
+    input:disabled, input[readonly] {
+      background: var(--paper);
+      color: var(--muted);
+    }
+
+    .btn {
+      width: 100%;
+      height: 54px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--green);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .btn.ghost {
+      background: transparent;
+      color: var(--stamp);
+      border: 1px solid #e7b4bb;
+      margin-top: 10px;
+    }
+    .btn.secondary {
+      background: var(--paper-2);
+      color: var(--ink);
+      margin-top: 10px;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(var(--nav-h) + var(--safe-bot) + 12px);
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.25s ease;
+      z-index: 40;
+      white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .desk-grid { display: block; }
+    @media (min-width: 860px) {
+      .app { padding-bottom: 32px; }
+      .nav { display: none; }
+      .desk-grid {
+        display: grid;
+        grid-template-columns: 1.35fr 0.9fr;
+        gap: 16px;
+        align-items: start;
+      }
+      .desk-grid .side { position: sticky; top: 16px; }
+      .page { display: block !important; }
+      .page.mobile-only { display: none !important; }
+    }
+    @media (max-width: 859px) {
+      .desk-only { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div>
+        <div class="eyebrow" id="chitEyebrow">Chit fund</div>
+        <h1 id="chitTitle">₹12,00,000</h1>
+      </div>
+      <button class="icon-btn" id="settingsBtn" aria-label="Settings" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4m11.4-11.4 1.4-1.4"/></svg>
+      </button>
+    </header>
+
+    <div class="desk-grid">
+      <div>
+        <section id="page-home" class="page on">
+          <div id="pinBanner"></div>
+          <div id="dueBanner"></div>
+          <div class="hero">
+            <div class="label">Paid till now</div>
+            <div class="amount" id="heroPaid">₹0</div>
+            <div class="bar"><span id="heroBar"></span></div>
+            <div class="hero-meta">
+              <span id="heroMonths">0 / 0 months</span>
+              <span id="heroPct">0%</span>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat paid"><span>This chit paid</span><strong id="statPaid">₹0</strong></div>
+            <div class="stat"><span>Share value so far</span><strong id="statShare">₹0</strong></div>
+            <div class="stat profit"><span>Total dividend</span><strong id="statProfit">₹0</strong></div>
+            <div class="stat"><span>Prize I get</span><strong id="statPrize">₹0</strong></div>
+          </div>
+          <div class="card">
+            <h3>Months</h3>
+            <div class="months-scroll" id="monthPills"></div>
+          </div>
+          <div class="card">
+            <h3>Paid vs dividend</h3>
+            <div class="legend">
+              <span><i class="dot" style="background:#9b2c3a"></i>Paid</span>
+              <span><i class="dot" style="background:#1b5e45"></i>Dividend / received</span>
+            </div>
+            <div class="chart-wrap"><svg class="chart" id="chart" viewBox="0 0 640 180" preserveAspectRatio="none"></svg></div>
+          </div>
+          <div class="card">
+            <h3>Recent months</h3>
+            <div id="recentList"></div>
+          </div>
+          <div class="card desk-only" id="deskHistoryCard">
+            <h3>All installments</h3>
+            <div id="deskFullList"></div>
+          </div>
+        </section>
+
+        <section id="page-history" class="page mobile-only">
+          <div class="card">
+            <h3>All installments</h3>
+            <div id="fullList"></div>
+          </div>
+        </section>
+
+        <section id="page-settings" class="page mobile-only">
+          <div class="card" id="settingsCard"></div>
+        </section>
+      </div>
+
+      <aside class="side">
+        <section id="page-add" class="page on">
+          <div class="card">
+            <h3 id="formTitle">Add monthly chit</h3>
+            <form id="chitForm">
+              <input type="hidden" id="editId" />
+              <label class="field">
+                <span>Date paid</span>
+                <input type="date" id="fDate" required />
+              </label>
+              <label class="field">
+                <span>Amount paid this month</span>
+                <input type="number" id="fSpent" inputmode="numeric" min="0" step="1" required placeholder="37465" />
+              </label>
+              <p class="hint">Net amount you paid after the group auction. Dividend is calculated for you.</p>
+              <div class="calc-box" id="dividendBox">
+                <div class="calc-row"><span>Group</span><span id="calcGroup">30 persons · 30 months</span></div>
+                <div class="calc-row"><span>Monthly share</span><span id="calcShare">₹0</span></div>
+                <div class="calc-row"><span>You pay</span><span id="calcPaid">₹0</span></div>
+                <div class="calc-row main"><span>Dividend</span><b id="calcDiv">₹0</b></div>
+              </div>
+              <label class="field">
+                <span>Note (optional)</span>
+                <input type="text" id="fNote" maxlength="80" placeholder="Auction, lifted, late fee…" />
+              </label>
+              <button class="btn" type="submit" id="saveBtn">Save month</button>
+              <button class="btn ghost" type="button" id="deleteBtn" hidden>Delete this month</button>
+              <button class="btn secondary desk-only" type="button" id="historyJump">View all months</button>
+            </form>
+          </div>
+          <div class="card desk-only" id="deskSettings"></div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <button data-page="home" class="active">Home</button>
+    <button class="add-fab" data-page="add" aria-label="Add monthly chit">+</button>
+    <button data-page="history">History</button>
+  </nav>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "mySavings.chit.v2";
+    const OLD_STORAGE_KEY = "mySavings.chit.v1";
+    const SEED_ENTRIES = [
+      { id: "2024-06-01", date: "2024-06-01", spent: 30520, earn: 7480, note: "" },
+      { id: "2024-07-02", date: "2024-07-02", spent: 31530, earn: 6470, note: "" },
+      { id: "2024-08-02", date: "2024-08-02", spent: 32530, earn: 5470, note: "" },
+      { id: "2024-09-02", date: "2024-09-02", spent: 32020, earn: 5980, note: "" },
+      { id: "2024-10-03", date: "2024-10-03", spent: 31685, earn: 6315, note: "" },
+      { id: "2024-11-03", date: "2024-11-03", spent: 32000, earn: 6000, note: "" },
+      { id: "2024-12-04", date: "2024-12-04", spent: 32250, earn: 5750, note: "" },
+      { id: "2025-01-04", date: "2025-01-04", spent: 32550, earn: 5450, note: "" },
+      { id: "2025-02-04", date: "2025-02-04", spent: 32630, earn: 5370, note: "" },
+      { id: "2025-03-04", date: "2025-03-04", spent: 33000, earn: 5000, note: "" },
+      { id: "2025-04-04", date: "2025-04-04", spent: 33170, earn: 4830, note: "" },
+      { id: "2025-05-05", date: "2025-05-05", spent: 33085, earn: 4915, note: "" },
+      { id: "2025-06-05", date: "2025-06-05", spent: 33200, earn: 4800, note: "" },
+      { id: "2025-07-06", date: "2025-07-06", spent: 33500, earn: 4500, note: "" },
+      { id: "2025-08-06", date: "2025-08-06", spent: 33835, earn: 4165, note: "" },
+      { id: "2025-09-05", date: "2025-09-05", spent: 34030, earn: 3970, note: "" },
+      { id: "2025-10-05", date: "2025-10-05", spent: 34170, earn: 3830, note: "" },
+      { id: "2025-11-04", date: "2025-11-04", spent: 34340, earn: 3660, note: "" },
+      { id: "2025-12-04", date: "2025-12-04", spent: 34750, earn: 3250, note: "" },
+      { id: "2026-01-03", date: "2026-01-03", spent: 35135, earn: 2865, note: "" },
+      { id: "2026-02-02", date: "2026-02-02", spent: 35520, earn: 2480, note: "" },
+      { id: "2026-03-04", date: "2026-03-04", spent: 35920, earn: 2080, note: "" },
+      { id: "2026-04-03", date: "2026-04-03", spent: 36185, earn: 1815, note: "" },
+      { id: "2026-05-03", date: "2026-05-03", spent: 36600, earn: 1400, note: "" },
+      { id: "2026-06-02", date: "2026-06-02", spent: 37165, earn: 835, note: "" },
+      { id: "2026-07-02", date: "2026-07-02", spent: 37465, earn: 535, note: "" }
+    ];
+    const SEED_SETTINGS = {
+      title: "Chit INR 12,00,000",
+      chitValue: 1200000,
+      prize: 1140000,
+      members: 30,
+      totalMonths: 30,
+      monthlyShare: 38000
+    };
+
+    const inr = (n) =>
+      new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(Math.round(n || 0));
+    const monthLabel = (iso) => {
+      const d = new Date(iso + "T12:00:00");
+      return d.toLocaleDateString("en-IN", { month: "short", year: "2-digit" });
+    };
+    const longDate = (iso) => {
+      const d = new Date(iso + "T12:00:00");
+      return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+    };
+    const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+    function monthlyShareOf(settings) {
+      const members = Number(settings.members) || 30;
+      const prize = Number(settings.prize) || 0;
+      const chit = Number(settings.chitValue) || 0;
+      if (prize > 0) return Math.round(prize / members);
+      return Math.round(chit / members);
+    }
+
+    function dividendOf(spent, settings) {
+      return Math.max(0, monthlyShareOf(settings) - Number(spent || 0));
+    }
+
+    function withDividends(data) {
+      const settings = {
+        ...SEED_SETTINGS,
+        ...(data.settings || {}),
+        members: Number((data.settings || {}).members) || 30,
+        totalMonths: Number((data.settings || {}).totalMonths) || 30
+      };
+      settings.monthlyShare = monthlyShareOf(settings);
+      const entries = (data.entries || []).map((e) => ({
+        ...e,
+        spent: Number(e.spent || 0),
+        earn: dividendOf(e.spent, settings)
+      }));
+      return { settings, entries };
+    }
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(OLD_STORAGE_KEY);
+        if (raw) return withDividends(JSON.parse(raw));
+      } catch (e) {}
+      return withDividends({ settings: { ...SEED_SETTINGS }, entries: SEED_ENTRIES.map((x) => ({ ...x })) });
+    }
+    function save(state) {
+      state = withDividends(state);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    let state = load();
+    let page = "home";
+
+    function totals() {
+      state = withDividends(state);
+      const entries = [...state.entries].sort((a, b) => a.date.localeCompare(b.date));
+      const paid = entries.reduce((s, e) => s + Number(e.spent || 0), 0);
+      const received = entries.reduce((s, e) => s + Number(e.earn || 0), 0);
+      const months = entries.length;
+      const share = months * monthlyShareOf(state.settings);
+      const profit = share - paid;
+      const pct = state.settings.totalMonths ? Math.round((months / state.settings.totalMonths) * 100) : 0;
+      return { entries, paid, received, months, share, profit, pct };
+    }
+
+    function nextDue() {
+      const { entries } = totals();
+      const last = entries[entries.length - 1];
+      if (!last) return { iso: new Date().toISOString().slice(0, 10), label: "This month", missing: true };
+      const d = new Date(last.date + "T12:00:00");
+      d.setMonth(d.getMonth() + 1);
+      const iso = d.toISOString().slice(0, 10);
+      const now = new Date();
+      const thisMonth = now.getFullYear() * 12 + now.getMonth();
+      const dueMonth = d.getFullYear() * 12 + d.getMonth();
+      return {
+        iso,
+        label: d.toLocaleDateString("en-IN", { month: "long", year: "numeric" }),
+        missing: dueMonth <= thisMonth && entries.length < state.settings.totalMonths
+      };
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2200);
+    }
+
+    function setPage(name) {
+      page = name;
+      if (window.matchMedia("(max-width: 859px)").matches) {
+        document.querySelectorAll(".page").forEach((p) => p.classList.remove("on"));
+        const el = document.getElementById("page-" + name);
+        if (el) el.classList.add("on");
+        document.querySelectorAll(".nav button").forEach((b) => {
+          b.classList.toggle("active", b.dataset.page === name);
+        });
+      }
+      window.scrollTo(0, 0);
+    }
+
+    function renderChart(entries) {
+      const svg = document.getElementById("chart");
+      if (!entries.length) { svg.innerHTML = ""; return; }
+      const w = 640, h = 180, pad = 18, gap = 4;
+      const max = Math.max(...entries.map((e) => Math.max(e.spent, e.earn)), 1);
+      const bw = (w - pad * 2) / entries.length;
+      let bars = "";
+      entries.forEach((e, i) => {
+        const x = pad + i * bw;
+        const paidH = (e.spent / max) * (h - 36);
+        const earnH = (e.earn / max) * (h - 36);
+        bars += `<rect x="${x}" y="${h - 20 - paidH}" width="${Math.max(bw / 2 - gap, 2)}" height="${paidH}" rx="2" fill="#9b2c3a"/>`;
+        bars += `<rect x="${x + bw / 2}" y="${h - 20 - earnH}" width="${Math.max(bw / 2 - gap, 2)}" height="${earnH}" rx="2" fill="#1b5e45"/>`;
+        if (i % 3 === 0 || i === entries.length - 1) {
+          bars += `<text x="${x + bw / 2}" y="${h - 4}" text-anchor="middle" font-size="9" fill="#6d6458">${monthLabel(e.date)}</text>`;
+        }
+      });
+      svg.innerHTML = bars;
+    }
+
+    function rowHtml(e) {
+      return `<button class="row" data-id="${e.id}">
+        <div><div class="d">${longDate(e.date)}</div><div class="sub">${e.note || "Dividend " + inr(e.earn)}</div></div>
+        <div class="nums"><div class="neg">Paid ${inr(e.spent)}</div><div class="pos">Div ${inr(e.earn)}</div></div>
+      </button>`;
+    }
+
+    function settingsFormHtml() {
+      const s = state.settings;
+      const share = monthlyShareOf(s);
+      return `
+        <h3>Chit settings</h3>
+        <label class="field"><span>Name</span><input id="sTitle" value="${s.title.replace(/"/g, "&quot;")}" /></label>
+        <label class="field"><span>Chit value</span><input id="sValue" type="number" value="${s.chitValue}" /></label>
+        <label class="field"><span>Prize I get</span><input id="sPrize" type="number" value="${s.prize}" /></label>
+        <label class="field"><span>Persons in group</span><input id="sMembers" type="number" min="1" value="${s.members}" /></label>
+        <label class="field"><span>Total months</span><input id="sMonths" type="number" min="1" value="${s.totalMonths}" /></label>
+        <p class="hint">Monthly share is prize ÷ persons = ${inr(share)}. Dividend each month = share − amount paid.</p>
+        <button class="btn" type="button" id="saveSettings">Save settings</button>
+        <button class="btn secondary" type="button" id="bookmarkBtn">Bookmark / pin this page</button>
+        <button class="btn secondary" type="button" id="exportBtn">Download backup (JSON)</button>
+        <label class="field" style="margin-top:10px"><span>Restore backup</span><input id="importFile" type="file" accept=".json,application/json" /></label>
+        <button class="btn secondary" type="button" id="csvBtn">Download Excel-style CSV</button>
+        <button class="btn ghost" type="button" id="resetBtn">Restore original Excel data</button>
+        <p class="hint" style="margin-top:12px">Phone: open <b>https://ansrkian-gif.github.io/my-chit/</b> then Chrome menu → Add to Home screen or Bookmark. On this computer you can still use the Desktop icon.</p>
+      `;
+    }
+
+    function bindSettings(root) {
+      root.querySelector("#saveSettings")?.addEventListener("click", () => {
+        state.settings.title = root.querySelector("#sTitle").value.trim() || state.settings.title;
+        state.settings.chitValue = Number(root.querySelector("#sValue").value) || 0;
+        state.settings.prize = Number(root.querySelector("#sPrize").value) || 0;
+        state.settings.members = Number(root.querySelector("#sMembers").value) || 30;
+        state.settings.totalMonths = Number(root.querySelector("#sMonths").value) || 30;
+        state = withDividends(state);
+        save(state);
+        render();
+        updateDividendCalc();
+        showToast("Settings saved · dividends updated");
+      });
+      root.querySelector("#exportBtn")?.addEventListener("click", () => download("my-chit-backup.json", JSON.stringify(state, null, 2), "application/json"));
+      root.querySelector("#bookmarkBtn")?.addEventListener("click", pinThisPage);
+      root.querySelector("#importFile")?.addEventListener("change", (ev) => importBackup(ev.target.files && ev.target.files[0]));
+      root.querySelector("#csvBtn")?.addEventListener("click", exportCsv);
+      root.querySelector("#resetBtn")?.addEventListener("click", () => {
+        if (!confirm("Replace everything with the original Excel sheet?")) return;
+        state = withDividends({ settings: { ...SEED_SETTINGS }, entries: SEED_ENTRIES.map((x) => ({ ...x })) });
+        save(state);
+        render();
+        resetForm();
+        showToast("Restored Excel data");
+      });
+    }
+
+    function pinThisPage() {
+      const link = location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).catch(() => {});
+      }
+      const isFile = location.protocol === "file:";
+      alert(isFile
+        ? "On this computer:\n\n1. Click the star on the right of the Chrome address bar, or\n2. Open the My Chit icon on your Desktop.\n\nYou do not need to open Drive again.\n\nThis page address was copied."
+        : "On your phone:\n\nChrome or Edge menu (three dots) → Add to Home screen or Bookmark.\n\nThen open My Chit from that icon next time.");
+    }
+
+    function importBackup(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (!data || !Array.isArray(data.entries)) throw new Error("bad");
+          if (!confirm("Replace current chit data with this backup?")) return;
+          state = withDividends(data);
+          save(state);
+          render();
+          resetForm();
+          showToast("Backup restored");
+        } catch (e) {
+          alert("That file is not a valid My Chit backup.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function download(name, text, type) {
+      const blob = new Blob([text], { type });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportCsv() {
+      const { entries } = totals();
+      let spentP = 0, overall = 0;
+      const lines = ["Date,Spent,Spent Progress,Earn,Overall"];
+      entries.forEach((e) => {
+        spentP += Number(e.spent);
+        overall += Number(e.earn);
+        lines.push(`${longDate(e.date)},${e.spent},${spentP},${e.earn},${overall}`);
+      });
+      download("chit-overall-flow.csv", lines.join("\n"), "text/csv");
+    }
+
+    function updateDividendCalc() {
+      const share = monthlyShareOf(state.settings);
+      const paid = Number(document.getElementById("fSpent").value || 0);
+      const div = dividendOf(paid, state.settings);
+      const members = state.settings.members || 30;
+      const months = state.settings.totalMonths || 30;
+      document.getElementById("calcGroup").textContent = `${members} persons · ${months} months`;
+      document.getElementById("calcShare").textContent = inr(share);
+      document.getElementById("calcPaid").textContent = inr(paid);
+      document.getElementById("calcDiv").textContent = inr(div);
+    }
+
+    function resetForm(prefillDue) {
+      document.getElementById("editId").value = "";
+      document.getElementById("formTitle").textContent = "Add monthly chit";
+      document.getElementById("saveBtn").textContent = "Save month";
+      document.getElementById("deleteBtn").hidden = true;
+      const due = nextDue();
+      const last = totals().entries.at(-1);
+      document.getElementById("fDate").value = prefillDue ? due.iso : due.iso;
+      document.getElementById("fSpent").value = last ? last.spent : "";
+      document.getElementById("fNote").value = "";
+      updateDividendCalc();
+    }
+
+    function fillForm(entry) {
+      document.getElementById("editId").value = entry.id;
+      document.getElementById("formTitle").textContent = "Edit month";
+      document.getElementById("saveBtn").textContent = "Update month";
+      document.getElementById("deleteBtn").hidden = false;
+      document.getElementById("fDate").value = entry.date;
+      document.getElementById("fSpent").value = entry.spent;
+      document.getElementById("fNote").value = entry.note || "";
+      updateDividendCalc();
+      setPage("add");
+    }
+
+    function render() {
+      const t = totals();
+      const s = state.settings;
+      document.getElementById("chitEyebrow").textContent = `${s.members || 30} persons · ${s.totalMonths} months`;
+      document.getElementById("chitTitle").textContent = inr(s.chitValue);
+      document.getElementById("heroPaid").textContent = inr(t.paid);
+      document.getElementById("heroBar").style.width = Math.min(100, t.pct) + "%";
+      document.getElementById("heroMonths").textContent = `${t.months} / ${s.totalMonths} months · share ${inr(monthlyShareOf(s))}`;
+      document.getElementById("heroPct").textContent = t.pct + "% complete";
+      document.getElementById("statPaid").textContent = inr(t.paid);
+      document.getElementById("statShare").textContent = inr(t.share);
+      document.getElementById("statProfit").textContent = inr(t.profit);
+      document.getElementById("statPrize").textContent = inr(s.prize);
+
+      const pin = document.getElementById("pinBanner");
+      if (location.protocol === "file:" && !localStorage.getItem("mySavings.pinHint.v1")) {
+        pin.innerHTML = `<div class="due" style="background:var(--green)"><div><p>Keep this page</p><h2>Use the My Chit Desktop icon, or tap the star in Chrome</h2></div><button type="button" id="pinOk">Got it</button></div>`;
+        pin.querySelector("#pinOk").onclick = () => {
+          localStorage.setItem("mySavings.pinHint.v1", "1");
+          pin.innerHTML = "";
+        };
+      } else pin.innerHTML = "";
+
+      const due = nextDue();
+      const banner = document.getElementById("dueBanner");
+      if (due.missing) {
+        banner.innerHTML = `<div class="due"><div><p>Next installment</p><h2>${due.label} is due</h2></div><button type="button" id="dueAdd">Add now</button></div>`;
+        banner.querySelector("#dueAdd").onclick = () => { resetForm(true); setPage("add"); };
+      } else banner.innerHTML = "";
+
+      const start = t.entries[0] ? new Date(t.entries[0].date + "T12:00:00") : new Date();
+      let pills = "";
+      for (let i = 0; i < s.totalMonths; i++) {
+        const d = new Date(start);
+        d.setMonth(d.getMonth() + i);
+        const key = d.toISOString().slice(0, 7);
+        const found = t.entries.find((e) => e.date.slice(0, 7) === key);
+        const dueKey = due.iso.slice(0, 7);
+        const cls = found ? "paid" : key === dueKey ? "due-pill" : "";
+        pills += `<div class="month-pill ${cls}"><span class="n">${i + 1}</span>${d.toLocaleDateString("en-IN", { month: "short" })}</div>`;
+      }
+      document.getElementById("monthPills").innerHTML = pills;
+
+      renderChart(t.entries);
+      const recent = t.entries.slice(-5).reverse().map(rowHtml).join("") || "<p class='hint'>No months yet</p>";
+      const all = t.entries.slice().reverse().map(rowHtml).join("") || "<p class='hint'>No months yet</p>";
+      document.getElementById("recentList").innerHTML = recent;
+      document.getElementById("fullList").innerHTML = all;
+      document.getElementById("deskFullList").innerHTML = all;
+
+      document.getElementById("settingsCard").innerHTML = settingsFormHtml();
+      document.getElementById("deskSettings").innerHTML = settingsFormHtml();
+      bindSettings(document.getElementById("settingsCard"));
+      bindSettings(document.getElementById("deskSettings"));
+
+      document.querySelectorAll(".row").forEach((btn) => {
+        btn.onclick = () => {
+          const entry = state.entries.find((e) => e.id === btn.dataset.id);
+          if (entry) fillForm(entry);
+        };
+      });
+    }
+
+    document.getElementById("chitForm").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const id = document.getElementById("editId").value;
+      const spent = Number(document.getElementById("fSpent").value);
+      const entry = {
+        id: id || uid(),
+        date: document.getElementById("fDate").value,
+        spent,
+        earn: dividendOf(spent, state.settings),
+        note: document.getElementById("fNote").value.trim()
+      };
+      if (!entry.date) return;
+      const idx = state.entries.findIndex((e) => e.id === id);
+      if (idx >= 0) state.entries[idx] = entry;
+      else state.entries.push(entry);
+      save(state);
+      render();
+      resetForm();
+      setPage("home");
+      showToast(idx >= 0 ? "Month updated" : "Month added");
+    });
+
+    document.getElementById("deleteBtn").addEventListener("click", () => {
+      const id = document.getElementById("editId").value;
+      if (!id || !confirm("Delete this month?")) return;
+      state.entries = state.entries.filter((e) => e.id !== id);
+      save(state);
+      render();
+      resetForm();
+      setPage("home");
+      showToast("Month deleted");
+    });
+
+    document.querySelectorAll(".nav button").forEach((b) => {
+      b.addEventListener("click", () => {
+        if (b.dataset.page === "add") resetForm(true);
+        setPage(b.dataset.page);
+      });
+    });
+    document.getElementById("fSpent").addEventListener("input", updateDividendCalc);
+    document.getElementById("settingsBtn").addEventListener("click", () => setPage("settings"));
+    document.getElementById("historyJump").addEventListener("click", () => {
+      document.getElementById("deskHistoryCard").scrollIntoView({ behavior: "smooth" });
+    });
+
+    if ("serviceWorker" in navigator && location.protocol !== "file:") {
+      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    }
+
+    resetForm(true);
+    render();
+  </script>
+</body>
+</html>

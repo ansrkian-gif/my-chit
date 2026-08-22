@@ -1,0 +1,7 @@
+*.xlsx
+*.lnk
+*.url
+my-chit-backup.json
+chit-overall-flow.csv
+.DS_Store
+Thumbs.db

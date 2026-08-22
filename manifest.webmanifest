@@ -1,0 +1,9 @@
+{
+  "name": "My Chit",
+  "short_name": "My Chit",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3eee4",
+  "theme_color": "#1b5e45",
+  "description": "Monthly chit dashboard and installment tracker"
+}
