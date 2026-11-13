@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0B1C2C" />
+  <meta name="description" content="Daybook — track daily expenses and stay within your budget." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Daybook" />
+  <title>Daybook</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <p class="brand-name">Daybook</p>
+        <p class="brand-date" id="headerDate">Today</p>
+      </div>
+    </div>
+    <button type="button" class="ghost-btn" id="settingsBtn" aria-label="Budget settings">Budget</button>
+  </header>
+
+  <main class="shell">
+    <section class="hero" aria-labelledby="heroTitle">
+      <p class="eyebrow" id="monthLabel">This month</p>
+      <h1 class="hero-title" id="heroTitle">Daybook</h1>
+      <p class="hero-sub" id="heroSub">Log today’s spend. Stay inside your budget.</p>
+
+      <div class="meter" role="img" aria-labelledby="remainingLabel">
+        <div class="meter-ring" id="meterRing">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="meter-track" cx="60" cy="60" r="52" />
+            <circle class="meter-value" id="meterValue" cx="60" cy="60" r="52" />
+          </svg>
+          <div class="meter-copy">
+            <p class="meter-kicker">Remaining</p>
+            <p class="meter-amount" id="remainingAmount">0.000</p>
+            <p class="meter-meta" id="remainingMeta">of budget</p>
+          </div>
+        </div>
+        <div class="meter-stats">
+          <div>
+            <p class="stat-label">Spent today</p>
+            <p class="stat-value" id="spentToday">0.000</p>
+          </div>
+          <div>
+            <p class="stat-label">Spent this month</p>
+            <p class="stat-value" id="spentMonth">0.000</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="addTitle">
+      <div class="panel-head">
+        <h2 id="addTitle">Add expense</h2>
+        <p>One entry keeps your daily picture honest.</p>
+      </div>
+      <form id="expenseForm" class="expense-form" autocomplete="off">
+        <label class="field">
+          <span>Amount</span>
+          <div class="amount-row">
+            <span class="currency-prefix" id="currencyPrefix">KWD</span>
+            <input id="amountInput" name="amount" type="number" inputmode="decimal" step="0.001" min="0.001" placeholder="0.000" required />
+          </div>
+        </label>
+        <label class="field">
+          <span>Category</span>
+          <select id="categoryInput" name="category" required>
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Bills">Bills</option>
+            <option value="Health">Health</option>
+            <option value="Fun">Fun</option>
+            <option value="Other" selected>Other</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Note <em>(optional)</em></span>
+          <input id="noteInput" name="note" type="text" maxlength="80" placeholder="Coffee, taxi, groceries…" />
+        </label>
+        <label class="field">
+          <span>Date</span>
+          <input id="dateInput" name="date" type="date" required />
+        </label>
+        <button type="submit" class="primary-btn" id="addBtn">Save expense</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="todayTitle">
+      <div class="panel-head row">
+        <div>
+          <h2 id="todayTitle">Today’s expenses</h2>
+          <p id="todayCount">No entries yet</p>
+        </div>
+        <button type="button" class="ghost-btn" id="showSummaryBtn">Daily summary</button>
+      </div>
+      <ul class="expense-list" id="todayList"></ul>
+    </section>
+
+    <section class="panel soft" aria-labelledby="historyTitle">
+      <div class="panel-head">
+        <h2 id="historyTitle">Recent days</h2>
+        <p>A quick look back across this month.</p>
+      </div>
+      <ul class="history-list" id="historyList"></ul>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <!-- Daily summary popup -->
+  <div class="modal-root" id="summaryModal" hidden>
+    <div class="modal-backdrop" data-close="summary"></div>
+    <div class="modal sheet summary-sheet" role="dialog" aria-modal="true" aria-labelledby="summaryTitle">
+      <div class="summary-glow" aria-hidden="true"></div>
+      <p class="summary-eyebrow">Daily check-in</p>
+      <h2 id="summaryTitle">How’s your day looking?</h2>
+      <p class="summary-date" id="summaryDate"></p>
+      <div class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Spent today</p>
+          <p class="summary-value" id="summarySpent">0.000</p>
+        </div>
+        <div class="summary-card accent">
+          <p class="summary-label">Remaining in budget</p>
+          <p class="summary-value" id="summaryRemaining">0.000</p>
+        </div>
+      </div>
+      <p class="summary-note" id="summaryNote"></p>
+      <button type="button" class="primary-btn" data-close="summary">Got it</button>
+    </div>
+  </div>
+
+  <!-- Budget settings -->
+  <div class="modal-root" id="settingsModal" hidden>
+    <div class="modal-backdrop" data-close="settings"></div>
+    <div class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <h2 id="settingsTitle">Budget settings</h2>
+      <p class="modal-lead">Set your monthly budget. Daybook will remind you each day how much is left.</p>
+      <form id="settingsForm" class="expense-form">
+        <label class="field">
+          <span>Monthly budget</span>
+          <div class="amount-row">
+            <span class="currency-prefix" id="settingsCurrencyPrefix">KWD</span>
+            <input id="budgetInput" type="number" inputmode="decimal" step="0.001" min="0" required />
+          </div>
+        </label>
+        <label class="field">
+          <span>Currency</span>
+          <select id="currencyInput">
+            <option value="KWD">KWD — Kuwaiti Dinar</option>
+            <option value="AED">AED — UAE Dirham</option>
+            <option value="SAR">SAR — Saudi Riyal</option>
+            <option value="USD">USD — US Dollar</option>
+            <option value="EUR">EUR — Euro</option>
+            <option value="INR">INR — Indian Rupee</option>
+            <option value="GBP">GBP — British Pound</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>Your name <em>(optional)</em></span>
+          <input id="nameInput" type="text" maxlength="40" placeholder="Shown on the daily popup" />
+        </label>
+        <button type="submit" class="primary-btn">Save settings</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
