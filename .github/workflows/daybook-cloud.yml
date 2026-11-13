@@ -1,0 +1,37 @@
+name: Daybook cloud sync
+
+on:
+  workflow_dispatch:
+    inputs:
+      book_id:
+        description: Daybook book id
+        required: true
+      payload_b64:
+        description: Base64-encoded JSON payload
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  save:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write cloud book
+        env:
+          BOOK_ID: ${{ inputs.book_id }}
+          PAYLOAD_B64: ${{ inputs.payload_b64 }}
+        run: |
+          mkdir -p daybook/cloud
+          python3 - <<'PY'
+          import base64, os, pathlib
+          book_id = os.environ["BOOK_ID"]
+          raw = base64.b64decode(os.environ["PAYLOAD_B64"])
+          path = pathlib.Path("daybook/cloud") / f"{book_id}.json"
+          path.write_bytes(raw)
+          print(f"wrote {path} ({len(raw)} bytes)")
+          PY
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(daybook): sync ${{ inputs.book_id }}"
