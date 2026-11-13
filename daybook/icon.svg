@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Daybook">
+  <defs>
+    <linearGradient id="g" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5EC4B5"/>
+      <stop offset="0.55" stop-color="#3D9B8F"/>
+      <stop offset="1" stop-color="#E07A5F"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0B1C2C"/>
+  <rect x="22" y="22" width="84" height="84" rx="20" fill="url(#g)" opacity="0.95"/>
+  <path d="M44 64h40M64 44v40" stroke="#07131F" stroke-width="10" stroke-linecap="round"/>
+</svg>
