@@ -455,6 +455,57 @@ body.modal-open .toast {
   bottom: calc(42vh + var(--safe-bot));
 }
 
+.sync-banner {
+  position: sticky;
+  top: calc(3.6rem + var(--safe-top));
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.75rem 1.15rem 0;
+  padding: 0.75rem 0.9rem;
+  border-radius: 16px;
+  border: 1px solid rgba(94, 196, 181, 0.28);
+  background: linear-gradient(135deg, rgba(61, 155, 143, 0.22), rgba(14, 32, 48, 0.85));
+  backdrop-filter: blur(10px);
+}
+
+.sync-banner p {
+  color: var(--sand);
+  font-size: 0.88rem;
+}
+
+.sync-box {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.9rem;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(7, 19, 31, 0.45);
+}
+
+.sync-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sync-help {
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.sync-box input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(7, 19, 31, 0.55);
+  padding: 0.7rem 0.8rem;
+  color: var(--sea-bright);
+  font-size: 0.78rem;
+}
+
 .toast.show {
   transform: translateX(-50%) translateY(0);
 }

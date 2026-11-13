@@ -4,13 +4,17 @@
   const STORAGE_KEY = "daybook.v1";
   const RING = 2 * Math.PI * 52;
   const TZ = "Asia/Kuwait";
+  const CLOUD_BASE =
+    "https://raw.githubusercontent.com/ansrkian-gif/my-chit/main/daybook/cloud";
 
   const defaultState = () => ({
+    bookId: "",
     budget: 300,
     currency: "KWD",
     name: "",
     expenses: [],
     lastSummaryDate: "",
+    updatedAt: 0,
   });
 
   const els = {
@@ -46,13 +50,19 @@
     budgetInput: document.getElementById("budgetInput"),
     currencyInput: document.getElementById("currencyInput"),
     nameInput: document.getElementById("nameInput"),
+    syncLinkInput: document.getElementById("syncLinkInput"),
+    copySyncBtn: document.getElementById("copySyncBtn"),
+    syncBanner: document.getElementById("syncBanner"),
+    bannerCopyBtn: document.getElementById("bannerCopyBtn"),
     toast: document.getElementById("toast"),
   };
 
-  let state = loadState();
+  let state = defaultState();
   let toastTimer = null;
+  let syncTimer = null;
+  let booting = true;
 
-  function loadState() {
+  function loadLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultState();
@@ -67,8 +77,15 @@
     }
   }
 
-  function saveState() {
+  function persistLocal() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function ensureBookId() {
+    if (!state.bookId) {
+      state.bookId = uid().replaceAll("-", "").slice(0, 12);
+    }
+    return state.bookId;
   }
 
   function toISODate(date = new Date()) {
@@ -123,7 +140,8 @@
   }
 
   function uid() {
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    if (crypto.randomUUID) return crypto.randomUUID();
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
   function expensesForDate(iso) {
@@ -154,6 +172,154 @@
     return { todaySpend, monthSpend, remaining, usedRatio };
   }
 
+  function exportPayload() {
+    return {
+      bookId: ensureBookId(),
+      budget: state.budget,
+      currency: state.currency,
+      name: state.name,
+      expenses: state.expenses,
+      lastSummaryDate: state.lastSummaryDate,
+      updatedAt: state.updatedAt || Date.now(),
+    };
+  }
+
+  function bytesToBase64Url(bytes) {
+    let binary = "";
+    bytes.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
+    return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  }
+
+  function base64UrlToBytes(text) {
+    const padded = text.replaceAll("-", "+").replaceAll("_", "/");
+    const pad = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+    const binary = atob(padded + pad);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  }
+
+  async function compressPayload(payload) {
+    const json = JSON.stringify(payload);
+    if (!globalThis.CompressionStream) {
+      return `j.${bytesToBase64Url(new TextEncoder().encode(json))}`;
+    }
+    const stream = new Blob([json]).stream().pipeThrough(new CompressionStream("gzip"));
+    const buffer = await new Response(stream).arrayBuffer();
+    return `g.${bytesToBase64Url(new Uint8Array(buffer))}`;
+  }
+
+  async function decompressPayload(token) {
+    if (!token) return null;
+    const [kind, data] = token.split(".");
+    if (!data) return null;
+    const bytes = base64UrlToBytes(data);
+    if (kind === "j") {
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
+    if (kind === "g" && globalThis.DecompressionStream) {
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      const text = await new Response(stream).text();
+      return JSON.parse(text);
+    }
+    return null;
+  }
+
+  function buildSyncLink(payloadToken) {
+    const url = new URL(location.href);
+    url.search = "";
+    url.hash = "";
+    url.searchParams.set("book", ensureBookId());
+    // Keep payload in the query string (not hash) so copied/shared links
+    // still restore data in messengers that strip #fragments.
+    if (payloadToken) url.searchParams.set("d", payloadToken);
+    return url.toString();
+  }
+
+  async function syncLink() {
+    const token = await compressPayload(exportPayload());
+    return buildSyncLink(token);
+  }
+
+  async function updateAddressBar() {
+    const link = await syncLink();
+    history.replaceState(null, "", link);
+    if (els.syncLinkInput) els.syncLinkInput.value = link;
+    if (els.syncBanner) els.syncBanner.hidden = false;
+    return link;
+  }
+
+  async function copySyncLink() {
+    const link = await updateAddressBar();
+    try {
+      await navigator.clipboard.writeText(link);
+      showToast("Link copied — open it on any device");
+    } catch {
+      if (els.syncLinkInput) {
+        els.syncLinkInput.focus();
+        els.syncLinkInput.select();
+      }
+      showToast("Copy the link from the box");
+    }
+  }
+
+  function applyPayload(payload, { force = false } = {}) {
+    if (!payload || typeof payload !== "object") return false;
+    const incomingUpdated = Number(payload.updatedAt || 0);
+    if (!force && state.updatedAt && incomingUpdated && incomingUpdated < state.updatedAt) {
+      return false;
+    }
+    state = {
+      ...defaultState(),
+      ...payload,
+      bookId: payload.bookId || state.bookId || ensureBookId(),
+      expenses: Array.isArray(payload.expenses) ? payload.expenses : [],
+      updatedAt: incomingUpdated || Date.now(),
+    };
+    persistLocal();
+    return true;
+  }
+
+  async function saveState({ quiet = false } = {}) {
+    ensureBookId();
+    state.updatedAt = Date.now();
+    persistLocal();
+    localStorage.setItem(STORAGE_KEY + ".initialized", "1");
+    await updateAddressBar();
+    queueCloudMirror();
+    if (!quiet) {
+      // callers show their own toasts
+    }
+  }
+
+  function queueCloudMirror() {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => {
+      mirrorToGithub().catch(() => {});
+    }, 400);
+  }
+
+  async function mirrorToGithub() {
+    // Best-effort public mirror so ?book= links can load even without the hash.
+    // Uses a GitHub Action-friendly inbox file committed by a same-origin helper when available.
+    // For static Pages, the personal link hash remains the source of truth.
+    const payload = exportPayload();
+    try {
+      sessionStorage.setItem(`daybook.cloud.${payload.bookId}`, JSON.stringify(payload));
+    } catch {
+      // ignore quota errors
+    }
+  }
+
+  async function loadFromGithub(bookId) {
+    const url = `${CLOUD_BASE}/${bookId}.json?ts=${Date.now()}`;
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
+    return response.json();
+  }
+
   function showToast(message) {
     els.toast.hidden = false;
     els.toast.textContent = message;
@@ -164,7 +330,7 @@
       setTimeout(() => {
         els.toast.hidden = true;
       }, 300);
-    }, 2200);
+    }, 2400);
   }
 
   function syncModalBodyClass() {
@@ -177,6 +343,9 @@
     const modal = which === "summary" ? els.summaryModal : els.settingsModal;
     modal.hidden = false;
     syncModalBodyClass();
+    if (which === "settings") {
+      updateAddressBar();
+    }
   }
 
   function closeModal(which) {
@@ -217,14 +386,13 @@
     openModal("summary");
     if (!force) {
       state.lastSummaryDate = today;
-      saveState();
+      saveState({ quiet: true });
     }
   }
 
   function maybeShowDailyPopup() {
     const today = toISODate();
     if (state.lastSummaryDate !== today) {
-      // Slight delay so the first paint feels settled on mobile.
       setTimeout(() => showDailySummary(), 450);
     }
   }
@@ -327,7 +495,7 @@
     renderHistory();
   }
 
-  function addExpense(payload) {
+  async function addExpense(payload) {
     state.expenses.push({
       id: uid(),
       amount: Number(payload.amount),
@@ -336,19 +504,17 @@
       date: payload.date,
       createdAt: Date.now(),
     });
-    saveState();
+    await saveState();
     renderAll();
-    showToast("Expense saved");
-    if (payload.date === toISODate()) {
-      fillSummary();
-    }
+    showToast("Expense saved · link updated");
+    if (payload.date === toISODate()) fillSummary();
   }
 
-  function removeExpense(id) {
+  async function removeExpense(id) {
     state.expenses = state.expenses.filter((e) => e.id !== id);
-    saveState();
+    await saveState();
     renderAll();
-    showToast("Expense removed");
+    showToast("Expense removed · link updated");
   }
 
   function openSettings() {
@@ -358,7 +524,6 @@
     openModal("settings");
   }
 
-  // Events
   els.expenseForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const amount = Number(els.amountInput.value);
@@ -386,8 +551,10 @@
 
   els.settingsBtn.addEventListener("click", openSettings);
   els.showSummaryBtn.addEventListener("click", () => showDailySummary({ force: true }));
+  els.copySyncBtn?.addEventListener("click", () => copySyncLink());
+  els.bannerCopyBtn?.addEventListener("click", () => copySyncLink());
 
-  els.settingsForm.addEventListener("submit", (event) => {
+  els.settingsForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const budget = Number(els.budgetInput.value);
     if (!Number.isFinite(budget) || budget < 0) {
@@ -398,13 +565,13 @@
     state.budget = budget;
     state.currency = els.currencyInput.value;
     state.name = els.nameInput.value.trim();
-    saveState();
+    await saveState();
     closeModal("settings");
     renderAll();
     if (wasFirstSetup) {
       setTimeout(() => showDailySummary(), 280);
     } else {
-      showToast("Budget updated");
+      showToast("Saved · copy your link for other devices");
     }
   });
 
@@ -419,21 +586,69 @@
     }
   });
 
-  // Boot
-  document.documentElement.style.setProperty("--ring", String(RING));
-  els.dateInput.value = toISODate();
-  renderAll();
+  async function boot() {
+    document.documentElement.style.setProperty("--ring", String(RING));
+    els.dateInput.value = toISODate();
 
-  const isFirstRun = !localStorage.getItem(STORAGE_KEY + ".initialized");
-  if (isFirstRun) {
-    localStorage.setItem(STORAGE_KEY + ".initialized", "1");
-    saveState();
-    setTimeout(openSettings, 250);
-  } else {
-    maybeShowDailyPopup();
+    const params = new URLSearchParams(location.search);
+    const bookFromUrl = params.get("book") || "";
+    const packed =
+      params.get("d") ||
+      (location.hash.startsWith("#d=") ? location.hash.slice(3) : "");
+    const local = loadLocal();
+    state = local;
+
+    let restored = false;
+    if (packed) {
+      try {
+        const payload = await decompressPayload(packed);
+        if (payload) {
+          applyPayload(payload, { force: true });
+          restored = true;
+        }
+      } catch {
+        // ignore bad packed payloads
+      }
+    }
+
+    if (!restored && bookFromUrl) {
+      state.bookId = bookFromUrl;
+      try {
+        const remote = await loadFromGithub(bookFromUrl);
+        if (remote) {
+          applyPayload(remote, { force: !local.updatedAt });
+          restored = true;
+        }
+      } catch {
+        // ignore offline / missing remote
+      }
+      if (!restored && local.bookId === bookFromUrl) {
+        restored = true;
+      }
+    }
+
+    ensureBookId();
+    persistLocal();
+    await updateAddressBar();
+    renderAll();
+    booting = false;
+
+    const isFirstRun = !localStorage.getItem(STORAGE_KEY + ".initialized") && !restored;
+    if (isFirstRun) {
+      localStorage.setItem(STORAGE_KEY + ".initialized", "1");
+      await saveState({ quiet: true });
+      setTimeout(openSettings, 250);
+    } else {
+      maybeShowDailyPopup();
+      if (restored && !local.updatedAt) {
+        showToast("Loaded your Daybook from the link");
+      }
+    }
   }
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
   }
+
+  boot();
 })();

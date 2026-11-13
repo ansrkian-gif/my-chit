@@ -174,9 +174,20 @@
           <span>Your name <em>(optional)</em></span>
           <input id="nameInput" type="text" maxlength="40" placeholder="Shown on the daily popup" />
         </label>
+        <div class="sync-box">
+          <p class="sync-title">Your cloud link</p>
+          <p class="sync-help">Copy this link and open it on any phone or browser to see the same budget and expenses.</p>
+          <input id="syncLinkInput" type="text" readonly />
+          <button type="button" class="ghost-btn" id="copySyncBtn">Copy link</button>
+        </div>
         <button type="submit" class="primary-btn">Save settings</button>
       </form>
     </div>
+  </div>
+
+  <div class="sync-banner" id="syncBanner" hidden>
+    <p>Use one personal link on every device so your Daybook stays in sync.</p>
+    <button type="button" class="ghost-btn" id="bannerCopyBtn">Copy my link</button>
   </div>
 
   <script src="app.js" defer></script>
