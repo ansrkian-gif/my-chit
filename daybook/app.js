@@ -6,8 +6,8 @@
   const TZ = "Asia/Kuwait";
   const CLOUD_BASE =
     "https://raw.githubusercontent.com/ansrkian-gif/my-chit/main/daybook/cloud";
-  // GitHub-backed sync API (keeps a stable ?book= link up to date).
-  // Personal link packing (?book=&d=) remains the always-available fallback.
+  // Optional live mirror that writes daybook/cloud/{id}.json on GitHub.
+  // Personal link packing (?book=&d=) is the reliable cross-device path.
   const SYNC_API = "https://daybook-ansrkian.loca.lt";
 
   const defaultState = () => ({
