@@ -71,16 +71,15 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }
 
-  function nowInTz(date = new Date()) {
-    return new Date(date.toLocaleString("en-US", { timeZone: TZ }));
-  }
-
   function toISODate(date = new Date()) {
-    const d = nowInTz(date);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, "0");
-    const day = String(d.getDate()).padStart(2, "0");
-    return `${y}-${m}-${day}`;
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: TZ,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).formatToParts(date);
+    const get = (type) => parts.find((p) => p.type === type)?.value;
+    return `${get("year")}-${get("month")}-${get("day")}`;
   }
 
   function parseISODate(iso) {
@@ -391,6 +390,7 @@
       showToast("Enter a valid budget");
       return;
     }
+    const wasFirstSetup = !state.lastSummaryDate;
     state.budget = budget;
     state.currency = els.currencyInput.value;
     state.name = els.nameInput.value.trim();
@@ -398,6 +398,9 @@
     closeModal("settings");
     renderAll();
     showToast("Budget updated");
+    if (wasFirstSetup) {
+      setTimeout(() => showDailySummary(), 280);
+    }
   });
 
   document.querySelectorAll("[data-close]").forEach((node) => {
@@ -420,8 +423,7 @@
   if (isFirstRun) {
     localStorage.setItem(STORAGE_KEY + ".initialized", "1");
     saveState();
-    setTimeout(openSettings, 200);
-    setTimeout(() => showDailySummary(), 700);
+    setTimeout(openSettings, 250);
   } else {
     maybeShowDailyPopup();
   }
