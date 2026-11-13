@@ -27,6 +27,7 @@
     remainingAmount: document.getElementById("remainingAmount"),
     remainingMeta: document.getElementById("remainingMeta"),
     spentToday: document.getElementById("spentToday"),
+    spentSelectedLabel: document.getElementById("spentSelectedLabel"),
     spentMonth: document.getElementById("spentMonth"),
     meterRing: document.getElementById("meterRing"),
     meterValue: document.getElementById("meterValue"),
@@ -35,9 +36,20 @@
     categoryInput: document.getElementById("categoryInput"),
     noteInput: document.getElementById("noteInput"),
     dateInput: document.getElementById("dateInput"),
+    viewDateInput: document.getElementById("viewDateInput"),
+    viewDateMeta: document.getElementById("viewDateMeta"),
+    prevDayBtn: document.getElementById("prevDayBtn"),
+    nextDayBtn: document.getElementById("nextDayBtn"),
+    jumpTodayBtn: document.getElementById("jumpTodayBtn"),
+    todayTitle: document.getElementById("todayTitle"),
     todayList: document.getElementById("todayList"),
     todayCount: document.getElementById("todayCount"),
     historyList: document.getElementById("historyList"),
+    dayChart: document.getElementById("dayChart"),
+    categoryChart: document.getElementById("categoryChart"),
+    dayChartLabel: document.getElementById("dayChartLabel"),
+    categoryChartLabel: document.getElementById("categoryChartLabel"),
+    chartsSub: document.getElementById("chartsSub"),
     currencyPrefix: document.getElementById("currencyPrefix"),
     settingsCurrencyPrefix: document.getElementById("settingsCurrencyPrefix"),
     settingsBtn: document.getElementById("settingsBtn"),
@@ -61,6 +73,7 @@
   };
 
   let state = defaultState();
+  let viewDate = "";
   let toastTimer = null;
   let syncTimer = null;
   let booting = true;
@@ -105,6 +118,29 @@
   function parseISODate(iso) {
     const [y, m, d] = iso.split("-").map(Number);
     return new Date(y, m - 1, d);
+  }
+
+  function shiftISODate(iso, days) {
+    const d = parseISODate(iso);
+    d.setDate(d.getDate() + days);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function daysInMonth(iso) {
+    const d = parseISODate(iso);
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  }
+
+  function setViewDate(iso, { syncInputs = true } = {}) {
+    viewDate = iso || toISODate();
+    if (syncInputs) {
+      if (els.viewDateInput) els.viewDateInput.value = viewDate;
+      if (els.dateInput) els.dateInput.value = viewDate;
+    }
+    renderAll();
   }
 
   function monthKey(iso = toISODate()) {
@@ -422,7 +458,8 @@
   }
 
   function renderMeter() {
-    const { todaySpend, monthSpend, remaining, usedRatio } = getTotals();
+    const selectedSpend = sum(expensesForDate(viewDate));
+    const { monthSpend, remaining, usedRatio } = getTotals(viewDate);
     const leftRatio = 1 - usedRatio;
     els.meterValue.style.strokeDasharray = String(RING);
     els.meterValue.style.strokeDashoffset = String(RING * usedRatio);
@@ -430,19 +467,44 @@
     els.meterRing.classList.toggle("is-danger", leftRatio < 0.15 || remaining < 0);
     els.remainingAmount.textContent = formatMoney(remaining, false);
     els.remainingMeta.textContent = `of ${formatMoney(state.budget)}`;
-    els.spentToday.textContent = formatMoney(todaySpend, false);
+    els.spentToday.textContent = formatMoney(selectedSpend, false);
     els.spentMonth.textContent = formatMoney(monthSpend, false);
+    if (els.spentSelectedLabel) {
+      els.spentSelectedLabel.textContent =
+        viewDate === toISODate() ? "Spent today" : "Spent this day";
+    }
+  }
+
+  function renderViewDateMeta() {
+    if (!els.viewDateMeta) return;
+    const selectedSpend = sum(expensesForDate(viewDate));
+    const label =
+      viewDate === toISODate()
+        ? "Today"
+        : viewDate === shiftISODate(toISODate(), -1)
+          ? "Yesterday"
+          : formatLongDate(viewDate);
+    els.viewDateMeta.textContent = `${label} · ${formatMoney(selectedSpend)} spent`;
   }
 
   function renderToday() {
-    const today = toISODate();
-    const items = expensesForDate(today);
+    const items = expensesForDate(viewDate);
+    const isToday = viewDate === toISODate();
+    if (els.todayTitle) {
+      els.todayTitle.textContent = isToday
+        ? "Today’s expenses"
+        : `Expenses · ${formatShortDate(viewDate)}`;
+    }
     els.todayCount.textContent = items.length
       ? `${items.length} entr${items.length === 1 ? "y" : "ies"}`
       : "No entries yet";
 
     if (!items.length) {
-      els.todayList.innerHTML = `<li class="empty">Add your first expense for today.</li>`;
+      els.todayList.innerHTML = `<li class="empty">${
+        isToday
+          ? "Add your first expense for today."
+          : "No expenses logged on this day."
+      }</li>`;
       return;
     }
 
@@ -460,7 +522,7 @@
   }
 
   function renderHistory() {
-    const ym = monthKey();
+    const ym = monthKey(viewDate);
     const byDay = new Map();
     for (const e of expensesForMonth(ym)) {
       byDay.set(e.date, (byDay.get(e.date) || 0) + Number(e.amount));
@@ -473,13 +535,148 @@
     els.historyList.innerHTML = days
       .map(
         ([date, total]) => `
-      <li class="history-item">
+      <li class="history-item${date === viewDate ? " is-active" : ""}" data-date="${date}" role="button" tabindex="0">
         <span class="title">${escapeHtml(formatShortDate(date))}</span>
         <span class="amount">${formatMoney(total)}</span>
-        <span class="meta">${date === toISODate() ? "Today" : "This month"}</span>
+        <span class="meta">${
+          date === toISODate() ? "Today" : date === viewDate ? "Selected" : "This month"
+        }</span>
       </li>`
       )
       .join("");
+  }
+
+  function categoryColor(index) {
+    const palette = [
+      "#5EC4B5",
+      "#E07A5F",
+      "#E2B86A",
+      "#7EB6FF",
+      "#C084FC",
+      "#86EFAC",
+      "#F9A8D4",
+    ];
+    return palette[index % palette.length];
+  }
+
+  function renderDayChart() {
+    if (!els.dayChart) return;
+    const ym = monthKey(viewDate);
+    const totalDays = daysInMonth(viewDate);
+    const byDay = new Map();
+    for (let day = 1; day <= totalDays; day += 1) {
+      const iso = `${ym}-${String(day).padStart(2, "0")}`;
+      byDay.set(iso, sum(expensesForDate(iso)));
+    }
+    const values = [...byDay.values()];
+    const max = Math.max(...values, 0);
+    const monthLabel = parseISODate(viewDate).toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric",
+    });
+    if (els.dayChartLabel) els.dayChartLabel.textContent = monthLabel;
+    if (els.chartsSub) {
+      els.chartsSub.textContent = `Showing ${monthLabel}. Category chart uses ${formatShortDate(viewDate)}.`;
+    }
+
+    if (max <= 0) {
+      els.dayChart.innerHTML = `<p class="chart-empty">No spending in this month yet.</p>`;
+      return;
+    }
+
+    const width = 320;
+    const height = 170;
+    const padL = 8;
+    const padR = 8;
+    const padT = 12;
+    const padB = 28;
+    const chartW = width - padL - padR;
+    const chartH = height - padT - padB;
+    const gap = Math.max(1.5, chartW / totalDays / 4);
+    const barW = Math.max(2, chartW / totalDays - gap);
+
+    const bars = [...byDay.entries()]
+      .map(([iso, amount], index) => {
+        const h = amount <= 0 ? 0 : Math.max(3, (amount / max) * chartH);
+        const x = padL + index * (barW + gap);
+        const y = padT + chartH - h;
+        const active = iso === viewDate;
+        const label =
+          index === 0 ||
+          index === totalDays - 1 ||
+          iso === viewDate ||
+          (index + 1) % 5 === 0
+            ? `<text x="${x + barW / 2}" y="${height - 8}" text-anchor="middle" fill="${
+                active ? "#5EC4B5" : "#9bb0b6"
+              }" font-size="9">${index + 1}</text>`
+            : "";
+        return `
+          <rect class="day-bar" data-date="${iso}" x="${x}" y="${y}" width="${barW}" height="${h}"
+            rx="2" fill="${active ? "#5EC4B5" : "rgba(94,196,181,0.35)"}" style="cursor:pointer"></rect>
+          ${label}
+        `;
+      })
+      .join("");
+
+    els.dayChart.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" role="presentation">
+        <line x1="${padL}" y1="${padT + chartH}" x2="${width - padR}" y2="${padT + chartH}"
+          stroke="rgba(214,232,236,0.16)" />
+        ${bars}
+      </svg>
+    `;
+  }
+
+  function renderCategoryChart() {
+    if (!els.categoryChart) return;
+    const items = expensesForDate(viewDate);
+    if (els.categoryChartLabel) {
+      els.categoryChartLabel.textContent =
+        viewDate === toISODate() ? "Today" : formatShortDate(viewDate);
+    }
+
+    if (!items.length) {
+      els.categoryChart.innerHTML = `<p class="chart-empty">No categories for this day.</p>`;
+      return;
+    }
+
+    const byCat = new Map();
+    for (const e of items) {
+      byCat.set(e.category, (byCat.get(e.category) || 0) + Number(e.amount || 0));
+    }
+    const rows = [...byCat.entries()].sort((a, b) => b[1] - a[1]);
+    const max = Math.max(...rows.map(([, v]) => v), 0);
+    const total = rows.reduce((acc, [, v]) => acc + v, 0);
+    const width = 320;
+    const rowH = 28;
+    const height = Math.max(120, rows.length * rowH + 16);
+    const padL = 78;
+    const padR = 58;
+    const barMax = width - padL - padR;
+
+    const bars = rows
+      .map(([category, amount], index) => {
+        const y = 10 + index * rowH;
+        const w = max > 0 ? Math.max(4, (amount / max) * barMax) : 0;
+        const pct = total > 0 ? Math.round((amount / total) * 100) : 0;
+        return `
+          <text x="0" y="${y + 12}" fill="#d8c4a4" font-size="11">${escapeHtml(category)}</text>
+          <rect x="${padL}" y="${y}" width="${w}" height="16" rx="8" fill="${categoryColor(index)}"></rect>
+          <text x="${padL + w + 8}" y="${y + 12}" fill="#eef5f4" font-size="11">${pct}%</text>
+        `;
+      })
+      .join("");
+
+    els.categoryChart.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" role="presentation">
+        ${bars}
+      </svg>
+    `;
+  }
+
+  function renderCharts() {
+    renderDayChart();
+    renderCategoryChart();
   }
 
   function formatTime(ts) {
@@ -513,9 +710,15 @@
   }
 
   function renderAll() {
+    if (!viewDate) viewDate = toISODate();
+    if (els.viewDateInput && els.viewDateInput.value !== viewDate) {
+      els.viewDateInput.value = viewDate;
+    }
     renderHeader();
     renderMeter();
+    renderViewDateMeta();
     renderToday();
+    renderCharts();
     renderHistory();
   }
 
@@ -528,6 +731,7 @@
       date: payload.date,
       createdAt: Date.now(),
     });
+    viewDate = payload.date || viewDate;
     await saveState();
     renderAll();
     showToast("Expense saved · link updated");
@@ -559,10 +763,10 @@
       amount,
       category: els.categoryInput.value,
       note: els.noteInput.value,
-      date: els.dateInput.value || toISODate(),
+      date: els.dateInput.value || viewDate || toISODate(),
     });
     els.expenseForm.reset();
-    els.dateInput.value = toISODate();
+    els.dateInput.value = viewDate || toISODate();
     els.categoryInput.value = "Other";
     els.amountInput.focus();
   });
@@ -571,6 +775,43 @@
     const btn = event.target.closest("[data-id]");
     if (!btn) return;
     removeExpense(btn.getAttribute("data-id"));
+  });
+
+  els.viewDateInput?.addEventListener("change", () => {
+    if (!els.viewDateInput.value) return;
+    setViewDate(els.viewDateInput.value);
+  });
+
+  els.prevDayBtn?.addEventListener("click", () => {
+    setViewDate(shiftISODate(viewDate || toISODate(), -1));
+  });
+
+  els.nextDayBtn?.addEventListener("click", () => {
+    setViewDate(shiftISODate(viewDate || toISODate(), 1));
+  });
+
+  els.jumpTodayBtn?.addEventListener("click", () => {
+    setViewDate(toISODate());
+  });
+
+  els.dayChart?.addEventListener("click", (event) => {
+    const bar = event.target.closest("[data-date]");
+    if (!bar) return;
+    setViewDate(bar.getAttribute("data-date"));
+  });
+
+  els.historyList.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-date]");
+    if (!row) return;
+    setViewDate(row.getAttribute("data-date"));
+  });
+
+  els.historyList.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const row = event.target.closest("[data-date]");
+    if (!row) return;
+    event.preventDefault();
+    setViewDate(row.getAttribute("data-date"));
   });
 
   els.settingsBtn.addEventListener("click", openSettings);
@@ -612,7 +853,9 @@
 
   async function boot() {
     document.documentElement.style.setProperty("--ring", String(RING));
-    els.dateInput.value = toISODate();
+    viewDate = toISODate();
+    els.dateInput.value = viewDate;
+    if (els.viewDateInput) els.viewDateInput.value = viewDate;
 
     const params = new URLSearchParams(location.search);
     const bookFromUrl = params.get("book") || "";

@@ -51,13 +51,53 @@
         </div>
         <div class="meter-stats">
           <div>
-            <p class="stat-label">Spent today</p>
+            <p class="stat-label" id="spentSelectedLabel">Spent today</p>
             <p class="stat-value" id="spentToday">0.000</p>
           </div>
           <div>
             <p class="stat-label">Spent this month</p>
             <p class="stat-value" id="spentMonth">0.000</p>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="viewDateTitle">
+      <div class="panel-head">
+        <h2 id="viewDateTitle">Browse by date</h2>
+        <p>Pick any day to see its expenses and updated charts.</p>
+      </div>
+      <div class="date-nav">
+        <button type="button" class="ghost-btn icon-btn" id="prevDayBtn" aria-label="Previous day">‹</button>
+        <label class="field date-nav-field">
+          <span class="sr-only">View date</span>
+          <input id="viewDateInput" type="date" required />
+        </label>
+        <button type="button" class="ghost-btn icon-btn" id="nextDayBtn" aria-label="Next day">›</button>
+        <button type="button" class="ghost-btn" id="jumpTodayBtn">Today</button>
+      </div>
+      <p class="date-nav-meta" id="viewDateMeta"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="chartsTitle">
+      <div class="panel-head">
+        <h2 id="chartsTitle">Spend charts</h2>
+        <p id="chartsSub">Charts follow the date you select above.</p>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3>By day</h3>
+            <p id="dayChartLabel">This month</p>
+          </div>
+          <div class="chart-frame" id="dayChart" role="img" aria-label="Expenses by day"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3>By category</h3>
+            <p id="categoryChartLabel">Selected day</p>
+          </div>
+          <div class="chart-frame" id="categoryChart" role="img" aria-label="Expenses by category"></div>
         </div>
       </div>
     </section>
@@ -112,8 +152,8 @@
 
     <section class="panel soft" aria-labelledby="historyTitle">
       <div class="panel-head">
-        <h2 id="historyTitle">Recent days</h2>
-        <p>A quick look back across this month.</p>
+        <h2 id="historyTitle">Days this month</h2>
+        <p>Tap a day to open its expenses and charts.</p>
       </div>
       <ul class="history-list" id="historyList"></ul>
     </section>
