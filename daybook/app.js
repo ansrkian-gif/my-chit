@@ -6,6 +6,9 @@
   const TZ = "Asia/Kuwait";
   const CLOUD_BASE =
     "https://raw.githubusercontent.com/ansrkian-gif/my-chit/main/daybook/cloud";
+  // GitHub-backed sync API (keeps a stable ?book= link up to date).
+  // Personal link packing (?book=&d=) remains the always-available fallback.
+  const SYNC_API = "https://daybook-ansrkian.loca.lt";
 
   const defaultState = () => ({
     bookId: "",
@@ -302,18 +305,39 @@
   }
 
   async function mirrorToGithub() {
-    // Best-effort public mirror so ?book= links can load even without the hash.
-    // Uses a GitHub Action-friendly inbox file committed by a same-origin helper when available.
-    // For static Pages, the personal link hash remains the source of truth.
     const payload = exportPayload();
     try {
       sessionStorage.setItem(`daybook.cloud.${payload.bookId}`, JSON.stringify(payload));
     } catch {
       // ignore quota errors
     }
+    try {
+      const response = await fetch(`${SYNC_API}/books/${payload.bookId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Bypass-Tunnel-Reminder": "true",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) {
+        state.cloudSyncedAt = Date.now();
+      }
+    } catch {
+      // Tunnel/API may be offline; personal link packing still works.
+    }
   }
 
   async function loadFromGithub(bookId) {
+    try {
+      const live = await fetch(`${SYNC_API}/books/${bookId}`, {
+        headers: { "Bypass-Tunnel-Reminder": "true" },
+        cache: "no-store",
+      });
+      if (live.ok) return live.json();
+    } catch {
+      // fall through to raw GitHub
+    }
     const url = `${CLOUD_BASE}/${bookId}.json?ts=${Date.now()}`;
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) return null;
