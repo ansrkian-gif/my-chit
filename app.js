@@ -167,18 +167,22 @@
     }, 2200);
   }
 
+  function syncModalBodyClass() {
+    const open = !els.summaryModal.hidden || !els.settingsModal.hidden;
+    document.body.classList.toggle("modal-open", open);
+    document.body.style.overflow = open ? "hidden" : "";
+  }
+
   function openModal(which) {
     const modal = which === "summary" ? els.summaryModal : els.settingsModal;
     modal.hidden = false;
-    document.body.style.overflow = "hidden";
+    syncModalBodyClass();
   }
 
   function closeModal(which) {
     const modal = which === "summary" ? els.summaryModal : els.settingsModal;
     modal.hidden = true;
-    if (els.summaryModal.hidden && els.settingsModal.hidden) {
-      document.body.style.overflow = "";
-    }
+    syncModalBodyClass();
   }
 
   function fillSummary(iso = toISODate()) {
@@ -397,9 +401,10 @@
     saveState();
     closeModal("settings");
     renderAll();
-    showToast("Budget updated");
     if (wasFirstSetup) {
       setTimeout(() => showDailySummary(), 280);
+    } else {
+      showToast("Budget updated");
     }
   });
 

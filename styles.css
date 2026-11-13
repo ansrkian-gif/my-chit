@@ -446,8 +446,13 @@ button, input, select {
   padding: 0.75rem 1rem;
   border-radius: 999px;
   box-shadow: var(--shadow);
-  z-index: 60;
+  z-index: 40;
+  pointer-events: none;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.modal-open .toast {
+  bottom: calc(42vh + var(--safe-bot));
 }
 
 .toast.show {
