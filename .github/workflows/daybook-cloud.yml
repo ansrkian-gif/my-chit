@@ -20,6 +20,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: daybook-data
       - name: Write cloud book
         env:
           BOOK_ID: ${{ github.event.client_payload.book_id || inputs.book_id }}
@@ -52,4 +54,5 @@ jobs:
           PY
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
+          branch: daybook-data
           commit_message: "chore(daybook): sync ${{ github.event.client_payload.book_id || inputs.book_id }}"

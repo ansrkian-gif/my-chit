@@ -7,9 +7,12 @@
   const IDB_STORE = "state";
   const RING = 2 * Math.PI * 52;
   const TZ = "Asia/Kuwait";
+  // Cloud snapshots live on the daybook-data branch so sync commits never
+  // rebuild / cancel GitHub Pages on main.
+  const CLOUD_BRANCH = "daybook-data";
   const CLOUD_BASE =
-    "https://raw.githubusercontent.com/ansrkian-gif/my-chit/main/daybook/cloud";
-  // Writes daybook/cloud/{id}.json so any open of ?book=id can load latest.
+    `https://raw.githubusercontent.com/ansrkian-gif/my-chit/${CLOUD_BRANCH}/daybook/cloud`;
+  // Optional live API; GitHub cloud files are the durable source of truth.
   const SYNC_API = "https://daybook-ansrkian.loca.lt";
   const REPO_API = "https://api.github.com/repos/ansrkian-gif/my-chit";
 
@@ -349,17 +352,24 @@
     return url.toString();
   }
 
+  function bookOnlyLink() {
+    return buildSyncLink(null);
+  }
+
   async function syncLink() {
     const token = await compressPayload(exportPayload());
     return buildSyncLink(token);
   }
 
   async function updateAddressBar() {
-    const link = await syncLink();
-    history.replaceState(null, "", link);
-    if (els.syncLinkInput) els.syncLinkInput.value = link;
+    // Keep the live URL / home-screen shortcut on ?book= only so each open
+    // fetches the latest cloud snapshot instead of a stale packed payload.
+    const shortcut = bookOnlyLink();
+    history.replaceState(null, "", shortcut);
+    const share = await syncLink();
+    if (els.syncLinkInput) els.syncLinkInput.value = share;
     if (els.syncBanner) els.syncBanner.hidden = false;
-    return link;
+    return share;
   }
 
   async function copySyncLink() {
@@ -373,6 +383,20 @@
         els.syncLinkInput.select();
       }
       showToast("Copy the link from the box");
+    }
+  }
+
+  async function refreshFromCloud({ render = true } = {}) {
+    const bookId = state.bookId || localStorage.getItem(BOOK_KEY) || "";
+    if (!bookId) return false;
+    try {
+      const remote = await loadFromGithub(bookId);
+      if (!remote) return false;
+      const changed = applyPayload(remote, { force: false });
+      if (changed && render && !booting) renderAll();
+      return changed;
+    } catch {
+      return false;
     }
   }
 
@@ -441,7 +465,7 @@
       // fall through
     }
 
-    // Fallback: write daybook/cloud/{id}.json via GitHub Contents API when a token is saved.
+    // Fallback: write daybook/cloud/{id}.json on daybook-data via Contents API.
     try {
       const token = (localStorage.getItem("daybook.ghToken") || "").trim();
       if (!token) return false;
@@ -449,12 +473,15 @@
       const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
       let sha;
       try {
-        const existing = await fetch(`${REPO_API}/contents/${path}?ref=main`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/vnd.github+json",
-          },
-        });
+        const existing = await fetch(
+          `${REPO_API}/contents/${path}?ref=${CLOUD_BRANCH}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              Accept: "application/vnd.github+json",
+            },
+          }
+        );
         if (existing.ok) {
           const body = await existing.json();
           sha = body.sha;
@@ -472,13 +499,13 @@
         body: JSON.stringify({
           message: `chore(daybook): sync ${payload.bookId}`,
           content,
-          branch: "main",
+          branch: CLOUD_BRANCH,
           ...(sha ? { sha } : {}),
         }),
       });
       if (response.ok) {
         state.cloudSyncedAt = Date.now();
-        // Also notify Actions path for redundancy.
+        // Also notify Actions path for redundancy (writes same branch).
         fetch(`${REPO_API}/dispatches`, {
           method: "POST",
           headers: {
@@ -510,14 +537,22 @@
     } catch {
       // fall through to raw GitHub
     }
-    try {
-      const url = `${CLOUD_BASE}/${bookId}.json?ts=${Date.now()}`;
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) return null;
-      return normalizeState(await response.json());
-    } catch {
-      return null;
+    const urls = [
+      `${CLOUD_BASE}/${bookId}.json?ts=${Date.now()}`,
+      // Legacy path while older clients still wrote to main.
+      `https://raw.githubusercontent.com/ansrkian-gif/my-chit/main/daybook/cloud/${bookId}.json?ts=${Date.now()}`,
+    ];
+    let best = null;
+    for (const url of urls) {
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) continue;
+        best = pickNewer(best, normalizeState(await response.json()));
+      } catch {
+        // try next
+      }
     }
+    return best;
   }
 
   async function updateDynamicManifest() {
@@ -1112,10 +1147,21 @@
     if (document.visibilityState === "hidden") {
       persistLocal();
       queueCloudMirror();
+      return;
     }
+    // Re-open / return to shortcut → pull latest cloud data.
+    refreshFromCloud({ render: true }).then((changed) => {
+      if (changed) showToast("Updated from your Daybook link");
+    });
+  });
+
+  window.addEventListener("focus", () => {
+    if (booting) return;
+    refreshFromCloud({ render: true });
   });
 
   window.addEventListener("online", () => {
+    refreshFromCloud({ render: true });
     queueCloudMirror();
   });
 

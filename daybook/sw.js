@@ -1,4 +1,4 @@
-const CACHE = "daybook-v4";
+const CACHE = "daybook-v5";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
