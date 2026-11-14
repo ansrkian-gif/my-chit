@@ -216,17 +216,21 @@
         </label>
         <div class="sync-box">
           <p class="sync-title">Your cloud link</p>
-          <p class="sync-help">This is the link to copy. The plain Daybook homepage stays empty on a new browser — your personal link carries your latest budget and expenses.</p>
+          <p class="sync-help">Copy this personal link and use it for your home-screen shortcut. Open that same link whenever you need your latest expenses.</p>
           <input id="syncLinkInput" type="text" readonly />
           <button type="button" class="ghost-btn" id="copySyncBtn">Copy my Daybook link</button>
         </div>
+        <label class="field">
+          <span>GitHub token <em>(optional, for cloud backup)</em></span>
+          <input id="ghTokenInput" type="password" autocomplete="off" placeholder="ghp_… paste a fine-grained token with Contents: Write" />
+        </label>
         <button type="submit" class="primary-btn">Save settings</button>
       </form>
     </div>
   </div>
 
   <div class="sync-banner" id="syncBanner" hidden>
-    <p>Use one personal link on every device so your Daybook stays in sync.</p>
+    <p>Your data is saved on this device. Copy your personal link to open the same Daybook anywhere.</p>
     <button type="button" class="ghost-btn" id="bannerCopyBtn">Copy my link</button>
   </div>
 

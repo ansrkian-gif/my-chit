@@ -1,6 +1,8 @@
 name: Daybook cloud sync
 
 on:
+  repository_dispatch:
+    types: [daybook-save]
   workflow_dispatch:
     inputs:
       book_id:
@@ -20,18 +22,34 @@ jobs:
       - uses: actions/checkout@v4
       - name: Write cloud book
         env:
-          BOOK_ID: ${{ inputs.book_id }}
-          PAYLOAD_B64: ${{ inputs.payload_b64 }}
+          BOOK_ID: ${{ github.event.client_payload.book_id || inputs.book_id }}
+          PAYLOAD_B64: ${{ github.event.client_payload.payload_b64 || inputs.payload_b64 }}
+          PAYLOAD_JSON: ${{ toJson(github.event.client_payload.payload) }}
         run: |
           mkdir -p daybook/cloud
           python3 - <<'PY'
-          import base64, os, pathlib
-          book_id = os.environ["BOOK_ID"]
-          raw = base64.b64decode(os.environ["PAYLOAD_B64"])
+          import base64, json, os, pathlib, re, sys
+          book_id = (os.environ.get("BOOK_ID") or "").strip()
+          if not re.fullmatch(r"[A-Za-z0-9_-]{6,64}", book_id):
+            print("invalid book id", book_id)
+            sys.exit(1)
+          raw = None
+          b64 = (os.environ.get("PAYLOAD_B64") or "").strip()
+          if b64 and b64 != "":
+            raw = base64.b64decode(b64)
+          else:
+            payload_json = os.environ.get("PAYLOAD_JSON") or ""
+            if payload_json and payload_json not in ("", "null"):
+              raw = payload_json.encode()
+          if not raw:
+            print("missing payload")
+            sys.exit(1)
+          data = json.loads(raw)
+          data["bookId"] = book_id
           path = pathlib.Path("daybook/cloud") / f"{book_id}.json"
-          path.write_bytes(raw)
-          print(f"wrote {path} ({len(raw)} bytes)")
+          path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf8")
+          print(f"wrote {path}")
           PY
       - uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore(daybook): sync ${{ inputs.book_id }}"
+          commit_message: "chore(daybook): sync ${{ github.event.client_payload.book_id || inputs.book_id }}"

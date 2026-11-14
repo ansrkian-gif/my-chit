@@ -2,13 +2,16 @@
   "use strict";
 
   const STORAGE_KEY = "daybook.v1";
+  const BOOK_KEY = "daybook.bookId";
+  const IDB_NAME = "daybook-db";
+  const IDB_STORE = "state";
   const RING = 2 * Math.PI * 52;
   const TZ = "Asia/Kuwait";
   const CLOUD_BASE =
     "https://raw.githubusercontent.com/ansrkian-gif/my-chit/main/daybook/cloud";
-  // Optional live mirror that writes daybook/cloud/{id}.json on GitHub.
-  // Personal link packing (?book=&d=) is the reliable cross-device path.
+  // Writes daybook/cloud/{id}.json so any open of ?book=id can load latest.
   const SYNC_API = "https://daybook-ansrkian.loca.lt";
+  const REPO_API = "https://api.github.com/repos/ansrkian-gif/my-chit";
 
   const defaultState = () => ({
     bookId: "",
@@ -67,6 +70,7 @@
     nameInput: document.getElementById("nameInput"),
     syncLinkInput: document.getElementById("syncLinkInput"),
     copySyncBtn: document.getElementById("copySyncBtn"),
+    ghTokenInput: document.getElementById("ghTokenInput"),
     syncBanner: document.getElementById("syncBanner"),
     bannerCopyBtn: document.getElementById("bannerCopyBtn"),
     toast: document.getElementById("toast"),
@@ -78,30 +82,98 @@
   let syncTimer = null;
   let booting = true;
 
+  function normalizeState(parsed) {
+    return {
+      ...defaultState(),
+      ...(parsed || {}),
+      expenses: Array.isArray(parsed?.expenses) ? parsed.expenses : [],
+      updatedAt: Number(parsed?.updatedAt || 0),
+      budget: Number(parsed?.budget || 0),
+    };
+  }
+
   function loadLocal() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return defaultState();
-      const parsed = JSON.parse(raw);
-      return {
-        ...defaultState(),
-        ...parsed,
-        expenses: Array.isArray(parsed.expenses) ? parsed.expenses : [],
-      };
+      return normalizeState(JSON.parse(raw));
     } catch {
       return defaultState();
     }
   }
 
+  function openIdb() {
+    return new Promise((resolve, reject) => {
+      if (!("indexedDB" in window)) {
+        reject(new Error("no idb"));
+        return;
+      }
+      const req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error || new Error("idb open failed"));
+    });
+  }
+
+  async function idbGet(key) {
+    try {
+      const db = await openIdb();
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readonly");
+        const req = tx.objectStore(IDB_STORE).get(key);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async function idbSet(key, value) {
+    try {
+      const db = await openIdb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(IDB_STORE, "readwrite");
+        tx.objectStore(IDB_STORE).put(value, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    } catch {
+      // ignore
+    }
+  }
+
   function persistLocal() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const payload = exportPayload();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    localStorage.setItem(BOOK_KEY, payload.bookId);
+    localStorage.setItem(STORAGE_KEY + ".initialized", "1");
+    idbSet("snapshot", payload);
+    idbSet(`book:${payload.bookId}`, payload);
   }
 
   function ensureBookId() {
     if (!state.bookId) {
-      state.bookId = uid().replaceAll("-", "").slice(0, 12);
+      state.bookId =
+        localStorage.getItem(BOOK_KEY) ||
+        uid().replaceAll("-", "").slice(0, 12);
     }
+    localStorage.setItem(BOOK_KEY, state.bookId);
     return state.bookId;
+  }
+
+  function stateScore(s) {
+    if (!s) return 0;
+    return Number(s.updatedAt || 0) * 1000 + (Array.isArray(s.expenses) ? s.expenses.length : 0);
+  }
+
+  function pickNewer(a, b) {
+    if (!a) return b || null;
+    if (!b) return a;
+    return stateScore(b) > stateScore(a) ? b : a;
   }
 
   function toISODate(date = new Date()) {
@@ -219,7 +291,7 @@
       name: state.name,
       expenses: state.expenses,
       lastSummaryDate: state.lastSummaryDate,
-      updatedAt: state.updatedAt || Date.now(),
+      updatedAt: Number(state.updatedAt || 0),
     };
   }
 
@@ -306,16 +378,22 @@
 
   function applyPayload(payload, { force = false } = {}) {
     if (!payload || typeof payload !== "object") return false;
-    const incomingUpdated = Number(payload.updatedAt || 0);
-    if (!force && state.updatedAt && incomingUpdated && incomingUpdated < state.updatedAt) {
+    const incoming = normalizeState(payload);
+    if (!force && stateScore(incoming) < stateScore(state)) {
+      return false;
+    }
+    // Never replace a richer local book with an empty/newer-but-blank payload.
+    if (
+      !force &&
+      state.expenses.length > 0 &&
+      incoming.expenses.length === 0 &&
+      incoming.updatedAt >= state.updatedAt
+    ) {
       return false;
     }
     state = {
-      ...defaultState(),
-      ...payload,
-      bookId: payload.bookId || state.bookId || ensureBookId(),
-      expenses: Array.isArray(payload.expenses) ? payload.expenses : [],
-      updatedAt: incomingUpdated || Date.now(),
+      ...incoming,
+      bookId: incoming.bookId || state.bookId || ensureBookId(),
     };
     persistLocal();
     return true;
@@ -325,19 +403,16 @@
     ensureBookId();
     state.updatedAt = Date.now();
     persistLocal();
-    localStorage.setItem(STORAGE_KEY + ".initialized", "1");
     await updateAddressBar();
+    await updateDynamicManifest();
     queueCloudMirror();
-    if (!quiet) {
-      // callers show their own toasts
-    }
   }
 
   function queueCloudMirror() {
     clearTimeout(syncTimer);
     syncTimer = setTimeout(() => {
       mirrorToGithub().catch(() => {});
-    }, 400);
+    }, 350);
   }
 
   async function mirrorToGithub() {
@@ -347,6 +422,8 @@
     } catch {
       // ignore quota errors
     }
+
+    // Prefer sync API (writes durable GitHub cloud files).
     try {
       const response = await fetch(`${SYNC_API}/books/${payload.bookId}`, {
         method: "PUT",
@@ -358,26 +435,125 @@
       });
       if (response.ok) {
         state.cloudSyncedAt = Date.now();
+        return true;
       }
     } catch {
-      // Tunnel/API may be offline; personal link packing still works.
+      // fall through
     }
+
+    // Fallback: write daybook/cloud/{id}.json via GitHub Contents API when a token is saved.
+    try {
+      const token = (localStorage.getItem("daybook.ghToken") || "").trim();
+      if (!token) return false;
+      const path = `daybook/cloud/${payload.bookId}.json`;
+      const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+      let sha;
+      try {
+        const existing = await fetch(`${REPO_API}/contents/${path}?ref=main`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+          },
+        });
+        if (existing.ok) {
+          const body = await existing.json();
+          sha = body.sha;
+        }
+      } catch {
+        // create new file
+      }
+      const response = await fetch(`${REPO_API}/contents/${path}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: `chore(daybook): sync ${payload.bookId}`,
+          content,
+          branch: "main",
+          ...(sha ? { sha } : {}),
+        }),
+      });
+      if (response.ok) {
+        state.cloudSyncedAt = Date.now();
+        // Also notify Actions path for redundancy.
+        fetch(`${REPO_API}/dispatches`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            event_type: "daybook-save",
+            client_payload: { book_id: payload.bookId, payload },
+          }),
+        }).catch(() => {});
+        return true;
+      }
+    } catch {
+      return false;
+    }
+    return false;
   }
 
   async function loadFromGithub(bookId) {
+    if (!bookId) return null;
     try {
       const live = await fetch(`${SYNC_API}/books/${bookId}`, {
         headers: { "Bypass-Tunnel-Reminder": "true" },
         cache: "no-store",
       });
-      if (live.ok) return live.json();
+      if (live.ok) return normalizeState(await live.json());
     } catch {
       // fall through to raw GitHub
     }
-    const url = `${CLOUD_BASE}/${bookId}.json?ts=${Date.now()}`;
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) return null;
-    return response.json();
+    try {
+      const url = `${CLOUD_BASE}/${bookId}.json?ts=${Date.now()}`;
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) return null;
+      return normalizeState(await response.json());
+    } catch {
+      return null;
+    }
+  }
+
+  async function updateDynamicManifest() {
+    try {
+      const bookId = ensureBookId();
+      const manifest = {
+        name: "Daybook",
+        short_name: "Daybook",
+        description: "Track daily expenses and stay within your budget.",
+        start_url: `./?book=${bookId}`,
+        scope: "./",
+        display: "standalone",
+        background_color: "#07131F",
+        theme_color: "#0B1C2C",
+        lang: "en",
+        icons: [
+          {
+            src: "icon.svg",
+            sizes: "any",
+            type: "image/svg+xml",
+            purpose: "any maskable",
+          },
+        ],
+      };
+      const blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+      const url = URL.createObjectURL(blob);
+      let link = document.querySelector('link[rel="manifest"]');
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "manifest";
+        document.head.appendChild(link);
+      }
+      link.href = url;
+    } catch {
+      // ignore
+    }
   }
 
   function showToast(message) {
@@ -749,6 +925,9 @@
     els.budgetInput.value = String(state.budget);
     els.currencyInput.value = state.currency;
     els.nameInput.value = state.name;
+    if (els.ghTokenInput) {
+      els.ghTokenInput.value = localStorage.getItem("daybook.ghToken") || "";
+    }
     openModal("settings");
   }
 
@@ -830,6 +1009,11 @@
     state.budget = budget;
     state.currency = els.currencyInput.value;
     state.name = els.nameInput.value.trim();
+    if (els.ghTokenInput) {
+      const token = els.ghTokenInput.value.trim();
+      if (token) localStorage.setItem("daybook.ghToken", token);
+      else localStorage.removeItem("daybook.ghToken");
+    }
     await saveState();
     closeModal("settings");
     renderAll();
@@ -862,56 +1046,78 @@
     const packed =
       params.get("d") ||
       (location.hash.startsWith("#d=") ? location.hash.slice(3) : "");
-    const local = loadLocal();
-    state = local;
 
-    let restored = false;
+    const local = loadLocal();
+    const idbSnap = normalizeState(await idbGet("snapshot"));
+    let best = pickNewer(local, idbSnap) || defaultState();
+
+    if (bookFromUrl) best.bookId = bookFromUrl;
+    if (!best.bookId) best.bookId = localStorage.getItem(BOOK_KEY) || "";
+
+    if (best.bookId) {
+      const idbBook = normalizeState(await idbGet(`book:${best.bookId}`));
+      best = pickNewer(best, idbBook) || best;
+    }
+
+    state = normalizeState(best);
+
     if (packed) {
       try {
         const payload = await decompressPayload(packed);
-        if (payload) {
-          applyPayload(payload, { force: true });
-          restored = true;
-        }
+        if (payload) applyPayload(payload, { force: false });
       } catch {
         // ignore bad packed payloads
       }
     }
 
-    if (!restored && bookFromUrl) {
-      state.bookId = bookFromUrl;
+    const bookId = bookFromUrl || state.bookId || localStorage.getItem(BOOK_KEY) || "";
+    if (bookId) {
+      state.bookId = bookId;
       try {
-        const remote = await loadFromGithub(bookFromUrl);
-        if (remote) {
-          applyPayload(remote, { force: !local.updatedAt });
-          restored = true;
-        }
+        const remote = await loadFromGithub(bookId);
+        if (remote) applyPayload(remote, { force: false });
       } catch {
         // ignore offline / missing remote
-      }
-      if (!restored && local.bookId === bookFromUrl) {
-        restored = true;
       }
     }
 
     ensureBookId();
     persistLocal();
     await updateAddressBar();
+    await updateDynamicManifest();
     renderAll();
     booting = false;
 
-    const isFirstRun = !localStorage.getItem(STORAGE_KEY + ".initialized") && !restored;
+    // Push latest local snapshot to cloud so other opens can fetch it.
+    queueCloudMirror();
+
+    const hasData =
+      state.expenses.length > 0 ||
+      !!state.name ||
+      (state.budget > 0 && state.updatedAt > 0 && localStorage.getItem(STORAGE_KEY + ".initialized"));
+    const isFirstRun = !localStorage.getItem(STORAGE_KEY + ".initialized") && !hasData;
+
     if (isFirstRun) {
-      localStorage.setItem(STORAGE_KEY + ".initialized", "1");
       await saveState({ quiet: true });
       setTimeout(openSettings, 250);
     } else {
       maybeShowDailyPopup();
-      if (restored && !local.updatedAt) {
-        showToast("Loaded your Daybook from the link");
+      if (state.expenses.length) {
+        showToast("Your Daybook is ready");
       }
     }
   }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") {
+      persistLocal();
+      queueCloudMirror();
+    }
+  });
+
+  window.addEventListener("online", () => {
+    queueCloudMirror();
+  });
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("./sw.js").catch(() => {});

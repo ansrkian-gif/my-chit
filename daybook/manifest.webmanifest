@@ -2,7 +2,7 @@
   "name": "Daybook",
   "short_name": "Daybook",
   "description": "Track daily expenses and stay within your budget.",
-  "start_url": "./",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#07131F",
   "theme_color": "#0B1C2C",

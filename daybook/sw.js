@@ -1,16 +1,8 @@
-const CACHE = "daybook-v3";
-const ASSETS = [
-  "./",
-  "./index.html",
-  "./styles.css",
-  "./app.js",
-  "./manifest.webmanifest",
-  "./icon.svg",
-];
+const CACHE = "daybook-v4";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS)));
   self.skipWaiting();
+  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(["./icon.svg"])));
 });
 
 self.addEventListener("activate", (event) => {
@@ -22,19 +14,29 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Network-first for app shell so updates never trap users on a stale build.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const fetched = fetch(request)
-        .then((response) => {
+    fetch(request)
+      .then((response) => {
+        if (response.ok && (url.pathname.endsWith(".svg") || url.pathname.endsWith(".webmanifest"))) {
           const copy = response.clone();
           caches.open(CACHE).then((cache) => cache.put(request, copy));
-          return response;
-        })
-        .catch(() => cached);
-      return cached || fetched;
-    })
+        }
+        return response;
+      })
+      .catch(async () => {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        if (request.mode === "navigate") {
+          return caches.match("./index.html");
+        }
+        throw new Error("offline");
+      })
   );
 });
