@@ -3,7 +3,16 @@
   "budget": 300,
   "currency": "KWD",
   "name": "",
-  "expenses": [],
+  "expenses": [
+    {
+      "id": "1534a4b5-347a-4fe1-b6ff-a48e5f75ec4b",
+      "amount": 9.75,
+      "category": "Food",
+      "note": "Keep me",
+      "date": "2026-11-14",
+      "createdAt": 1794635442085
+    }
+  ],
   "lastSummaryDate": "2026-11-14",
-  "updatedAt": 1794635438521
+  "updatedAt": 1794635442522
 }
