@@ -1,0 +1,130 @@
+{
+  "bookId": "2b1d159a02e1",
+  "budget": 300,
+  "currency": "KWD",
+  "name": "Sadiq Ali Syed",
+  "expenses": [
+    {
+      "id": "mweurwxu-pl6nvd",
+      "amount": 1.5,
+      "category": "Food",
+      "note": "Juice",
+      "date": "2026-11-13",
+      "createdAt": 1794566862210
+    },
+    {
+      "id": "mweusci1-fp4b1x",
+      "amount": 3,
+      "category": "Other",
+      "note": "Water filter",
+      "date": "2026-11-13",
+      "createdAt": 1794566882377
+    },
+    {
+      "id": "1083d205-67a0-4c00-9e8a-e85330bf621f",
+      "amount": 1,
+      "category": "Transport",
+      "note": "Cab",
+      "date": "2026-11-13",
+      "createdAt": 1794612128337
+    },
+    {
+      "id": "4e4b4027-aa57-4cc6-a61f-23d97112be8d",
+      "amount": 6,
+      "category": "Bills",
+      "note": "STC MNP",
+      "date": "2026-11-13",
+      "createdAt": 1794612204854
+    },
+    {
+      "id": "1578b23c-08d8-4f67-96ab-4e7e102c8842",
+      "amount": 15,
+      "category": "Food",
+      "note": "Lulu",
+      "date": "2026-11-13",
+      "createdAt": 1794612275770
+    },
+    {
+      "id": "e0a409b2-594e-40d2-b3e0-a2c7f5a8e159",
+      "amount": 3,
+      "category": "Food",
+      "note": "Momos",
+      "date": "2026-11-13",
+      "createdAt": 1794612350063
+    },
+    {
+      "id": "05f9bfa8-bb22-4104-becb-46266c46ccd4",
+      "amount": 0.56,
+      "category": "Shopping",
+      "note": "Surf",
+      "date": "2026-11-13",
+      "createdAt": 1794612373015
+    },
+    {
+      "id": "091b1363-ea74-42ba-9acb-c028cb6035b7",
+      "amount": 1,
+      "category": "Shopping",
+      "note": "Baby sandals",
+      "date": "2026-11-13",
+      "createdAt": 1794612395757
+    },
+    {
+      "id": "35af3a3e-03d9-48c8-81eb-d6ecf0cf111d",
+      "amount": 1.5,
+      "category": "Other",
+      "note": "Mahmeed",
+      "date": "2026-11-13",
+      "createdAt": 1794612430639
+    },
+    {
+      "id": "de9f3d97-c692-4ba2-abee-d94a796b9a1b",
+      "amount": 2.5,
+      "category": "Other",
+      "note": "Extension box",
+      "date": "2026-11-13",
+      "createdAt": 1794612477091
+    },
+    {
+      "id": "64fcd4de-f9a1-444f-974b-bde01000df5b",
+      "amount": 1.325,
+      "category": "Food",
+      "note": "Milk and Maggi",
+      "date": "2026-11-14",
+      "createdAt": 1794777598924
+    },
+    {
+      "id": "00a081da-92db-4a66-8b50-f0807e5e7205",
+      "amount": 1.325,
+      "category": "Bills",
+      "note": "Iron",
+      "date": "2026-11-14",
+      "createdAt": 1794777627279
+    },
+    {
+      "id": "0eb3055f-85bb-425e-a740-6af65d4a415d",
+      "amount": 1.25,
+      "category": "Food",
+      "note": "Juice",
+      "date": "2026-11-14",
+      "createdAt": 1794777644476
+    },
+    {
+      "id": "cc614af8-c2de-46cb-89e6-8dff271272b9",
+      "amount": 13,
+      "category": "Other",
+      "note": "Router",
+      "date": "2026-11-14",
+      "createdAt": 1794777659827
+    },
+    {
+      "id": "9510aa0a-2c73-485e-bda5-f99b947c21d5",
+      "amount": 1.85,
+      "category": "Food",
+      "note": "Lunch at trolley",
+      "date": "2026-11-15",
+      "createdAt": 1794777714709
+    }
+  ],
+  "lastSummaryDate": "2026-11-16",
+  "updatedAt": 1794777714709
+}
