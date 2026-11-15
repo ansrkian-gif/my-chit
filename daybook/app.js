@@ -13,7 +13,7 @@
   const CLOUD_BASE =
     `https://raw.githubusercontent.com/ansrkian-gif/my-chit/${CLOUD_BRANCH}/daybook/cloud`;
   // Optional live API; GitHub cloud files are the durable source of truth.
-  const SYNC_API = "https://daybook-ansrkian.loca.lt";
+  const SYNC_API = "https://casinos-increasingly-precisely-reed.trycloudflare.com";
   const REPO_API = "https://api.github.com/repos/ansrkian-gif/my-chit";
 
   const defaultState = () => ({
@@ -165,6 +165,7 @@
         uid().replaceAll("-", "").slice(0, 12);
     }
     localStorage.setItem(BOOK_KEY, state.bookId);
+    rememberBookForHomescreen(state.bookId);
     return state.bookId;
   }
 
@@ -539,6 +540,7 @@
     }
     const urls = [
       `${CLOUD_BASE}/${bookId}.json?ts=${Date.now()}`,
+      `https://cdn.jsdelivr.net/gh/ansrkian-gif/my-chit@daybook-data/daybook/cloud/${bookId}.json?ts=${Date.now()}`,
       // Legacy path while older clients still wrote to main.
       `https://raw.githubusercontent.com/ansrkian-gif/my-chit/main/daybook/cloud/${bookId}.json?ts=${Date.now()}`,
     ];
@@ -555,22 +557,52 @@
     return best;
   }
 
+  function rememberBookForHomescreen(bookId) {
+    if (!bookId) return;
+    try {
+      const path = location.pathname.replace(/\/index\.html$/, "/");
+      const cookiePath = path.endsWith("/") ? path : `${path}/`;
+      document.cookie =
+        `daybook_book=${encodeURIComponent(bookId)}; Path=${cookiePath}; Max-Age=31536000; SameSite=Lax`;
+    } catch {
+      // ignore
+    }
+    if (navigator.serviceWorker?.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: "daybook-set-book",
+        bookId,
+      });
+    } else if (navigator.serviceWorker) {
+      navigator.serviceWorker.ready
+        .then((reg) => reg.active?.postMessage({ type: "daybook-set-book", bookId }))
+        .catch(() => {});
+    }
+  }
+
   async function updateDynamicManifest() {
     try {
       const bookId = ensureBookId();
+      rememberBookForHomescreen(bookId);
+      const start = new URL(`?book=${bookId}`, location.href);
+      // Drop packed payload from the installed shortcut URL — Home Screen
+      // truncates long ?d= links and then opens a blank book.
+      start.searchParams.delete("d");
+      start.hash = "";
+      const scope = new URL("./", location.href);
       const manifest = {
         name: "Daybook",
         short_name: "Daybook",
         description: "Track daily expenses and stay within your budget.",
-        start_url: `./?book=${bookId}`,
-        scope: "./",
+        id: `${scope.pathname}?book=${bookId}`,
+        start_url: start.pathname + start.search,
+        scope: scope.pathname,
         display: "standalone",
         background_color: "#07131F",
         theme_color: "#0B1C2C",
         lang: "en",
         icons: [
           {
-            src: "icon.svg",
+            src: new URL("icon.svg", location.href).href,
             sizes: "any",
             type: "image/svg+xml",
             purpose: "any maskable",
@@ -1166,7 +1198,12 @@
   });
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js").catch(() => {});
+    navigator.serviceWorker
+      .register("./sw.js")
+      .then(() => {
+        rememberBookForHomescreen(state.bookId || localStorage.getItem(BOOK_KEY) || "");
+      })
+      .catch(() => {});
   }
 
   boot();
