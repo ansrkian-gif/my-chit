@@ -69,6 +69,17 @@
     showSummaryBtn: document.getElementById("showSummaryBtn"),
     summaryModal: document.getElementById("summaryModal"),
     settingsModal: document.getElementById("settingsModal"),
+    editModal: document.getElementById("editModal"),
+    editForm: document.getElementById("editForm"),
+    editExpenseId: document.getElementById("editExpenseId"),
+    editExpenseSummary: document.getElementById("editExpenseSummary"),
+    editPayByInput: document.getElementById("editPayByInput"),
+    editPayByCash: document.getElementById("editPayByCash"),
+    editPayByOnline: document.getElementById("editPayByOnline"),
+    editCardTypeField: document.getElementById("editCardTypeField"),
+    editCardTypeInput: document.getElementById("editCardTypeInput"),
+    editCardDebit: document.getElementById("editCardDebit"),
+    editCardCredit: document.getElementById("editCardCredit"),
     summaryDate: document.getElementById("summaryDate"),
     summarySpent: document.getElementById("summarySpent"),
     summaryRemaining: document.getElementById("summaryRemaining"),
@@ -643,14 +654,24 @@
     }, 2400);
   }
 
+  function modalEl(which) {
+    if (which === "summary") return els.summaryModal;
+    if (which === "edit") return els.editModal;
+    return els.settingsModal;
+  }
+
   function syncModalBodyClass() {
-    const open = !els.summaryModal.hidden || !els.settingsModal.hidden;
+    const open =
+      !els.summaryModal.hidden ||
+      !els.settingsModal.hidden ||
+      (els.editModal && !els.editModal.hidden);
     document.body.classList.toggle("modal-open", open);
     document.body.style.overflow = open ? "hidden" : "";
   }
 
   function openModal(which) {
-    const modal = which === "summary" ? els.summaryModal : els.settingsModal;
+    const modal = modalEl(which);
+    if (!modal) return;
     modal.hidden = false;
     syncModalBodyClass();
     if (which === "settings") {
@@ -659,7 +680,8 @@
   }
 
   function closeModal(which) {
-    const modal = which === "summary" ? els.summaryModal : els.settingsModal;
+    const modal = modalEl(which);
+    if (!modal) return;
     modal.hidden = true;
     syncModalBodyClass();
   }
@@ -765,7 +787,10 @@
         <span class="title">${escapeHtml(e.category)}${e.note ? ` · ${escapeHtml(e.note)}` : ""}</span>
         <span class="amount">${formatMoney(e.amount)}</span>
         <span class="meta">${formatTime(e.createdAt)} · ${escapeHtml(paymentLabel(e))}</span>
-        <button type="button" class="delete" data-id="${e.id}">Remove</button>
+        <span class="item-actions">
+          <button type="button" class="edit" data-action="edit" data-id="${e.id}">Edit</button>
+          <button type="button" class="delete" data-action="remove" data-id="${e.id}">Remove</button>
+        </span>
       </li>`
       )
       .join("");
@@ -819,6 +844,73 @@
     if (els.payByInput) els.payByInput.value = "cash";
     if (els.cardTypeInput) els.cardTypeInput.value = "debit";
     syncPayByUi();
+  }
+
+  function selectedEditPayBy() {
+    const value = (els.editPayByInput?.value || "cash").toLowerCase();
+    return value === "online" ? "online" : "cash";
+  }
+
+  function selectedEditCardType() {
+    if (selectedEditPayBy() !== "online") return "";
+    const value = (els.editCardTypeInput?.value || "debit").toLowerCase();
+    return value === "credit" ? "credit" : "debit";
+  }
+
+  function syncEditPayByUi() {
+    const payBy = selectedEditPayBy();
+    const online = payBy === "online";
+    setChoiceActive(
+      [els.editPayByCash, els.editPayByOnline],
+      online ? els.editPayByOnline : els.editPayByCash
+    );
+    if (els.editCardTypeField) {
+      els.editCardTypeField.hidden = !online;
+      els.editCardTypeField.setAttribute("aria-hidden", online ? "false" : "true");
+    }
+    if (online) {
+      const card = selectedEditCardType() || "debit";
+      if (els.editCardTypeInput) els.editCardTypeInput.value = card;
+      setChoiceActive(
+        [els.editCardDebit, els.editCardCredit],
+        card === "credit" ? els.editCardCredit : els.editCardDebit
+      );
+    }
+  }
+
+  function openEditExpense(id) {
+    const expense = state.expenses.find((e) => e.id === id);
+    if (!expense || !els.editModal) return;
+    if (els.editExpenseId) els.editExpenseId.value = expense.id;
+    if (els.editExpenseSummary) {
+      const note = expense.note ? ` · ${expense.note}` : "";
+      els.editExpenseSummary.textContent = `${expense.category}${note} · ${formatMoney(expense.amount)}`;
+    }
+    if (els.editPayByInput) {
+      els.editPayByInput.value = expense.payBy === "online" ? "online" : "cash";
+    }
+    if (els.editCardTypeInput) {
+      els.editCardTypeInput.value =
+        expense.payBy === "online" && expense.cardType === "credit" ? "credit" : "debit";
+    }
+    syncEditPayByUi();
+    openModal("edit");
+  }
+
+  async function saveEditedPayment() {
+    const id = els.editExpenseId?.value || "";
+    const expense = state.expenses.find((e) => e.id === id);
+    if (!expense) {
+      showToast("Expense not found");
+      return;
+    }
+    const payBy = selectedEditPayBy();
+    expense.payBy = payBy;
+    expense.cardType = payBy === "online" ? selectedEditCardType() : "";
+    await saveState();
+    closeModal("edit");
+    renderAll();
+    showToast("Payment updated");
   }
 
   function renderHistory() {
@@ -1100,9 +1192,37 @@
   });
 
   els.todayList.addEventListener("click", (event) => {
-    const btn = event.target.closest("[data-id]");
+    const btn = event.target.closest("[data-action][data-id]");
     if (!btn) return;
-    removeExpense(btn.getAttribute("data-id"));
+    const id = btn.getAttribute("data-id");
+    const action = btn.getAttribute("data-action");
+    if (action === "edit") openEditExpense(id);
+    if (action === "remove") removeExpense(id);
+  });
+
+  els.editPayByCash?.addEventListener("click", () => {
+    if (els.editPayByInput) els.editPayByInput.value = "cash";
+    syncEditPayByUi();
+  });
+  els.editPayByOnline?.addEventListener("click", () => {
+    if (els.editPayByInput) els.editPayByInput.value = "online";
+    if (els.editCardTypeInput && !els.editCardTypeInput.value) {
+      els.editCardTypeInput.value = "debit";
+    }
+    syncEditPayByUi();
+  });
+  els.editCardDebit?.addEventListener("click", () => {
+    if (els.editCardTypeInput) els.editCardTypeInput.value = "debit";
+    syncEditPayByUi();
+  });
+  els.editCardCredit?.addEventListener("click", () => {
+    if (els.editCardTypeInput) els.editCardTypeInput.value = "credit";
+    syncEditPayByUi();
+  });
+
+  els.editForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveEditedPayment();
   });
 
   els.viewDateInput?.addEventListener("change", () => {
@@ -1181,6 +1301,7 @@
     if (event.key === "Escape") {
       closeModal("summary");
       closeModal("settings");
+      closeModal("edit");
     }
   });
 

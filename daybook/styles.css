@@ -470,16 +470,38 @@ button, input, select {
   justify-self: end;
 }
 
-.expense-item .delete {
+.expense-item .item-actions {
   grid-column: 2;
   grid-row: 2;
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.expense-item .edit,
+.expense-item .delete {
   background: transparent;
   border: 0;
-  color: var(--coral);
   cursor: pointer;
   font-size: 0.78rem;
-  opacity: 0.85;
+  opacity: 0.9;
+  padding: 0;
+}
+
+.expense-item .edit {
+  color: var(--mint, #5ec4b5);
+}
+
+.expense-item .delete {
+  color: var(--coral);
+}
+
+.edit-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
 }
 
 .empty {

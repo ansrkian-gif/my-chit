@@ -246,6 +246,38 @@
     </div>
   </div>
 
+  <!-- Edit expense payment -->
+  <div class="modal-root" id="editModal" hidden>
+    <div class="modal-backdrop" data-close="edit"></div>
+    <div class="modal sheet" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <h2 id="editTitle">Edit payment</h2>
+      <p class="modal-lead" id="editExpenseSummary">Choose how this expense was paid.</p>
+      <form id="editForm" class="expense-form">
+        <input type="hidden" id="editExpenseId" value="" />
+        <div class="field pay-fieldset">
+          <span id="editPayByLabel">Paid by</span>
+          <input type="hidden" id="editPayByInput" name="editPayBy" value="cash" />
+          <div class="choice-row" role="group" aria-labelledby="editPayByLabel">
+            <button type="button" class="choice-btn is-active" id="editPayByCash" data-pay-by="cash" aria-pressed="true">Cash</button>
+            <button type="button" class="choice-btn" id="editPayByOnline" data-pay-by="online" aria-pressed="false">Online</button>
+          </div>
+        </div>
+        <div class="field pay-fieldset" id="editCardTypeField" hidden>
+          <span id="editCardTypeLabel">Online method</span>
+          <input type="hidden" id="editCardTypeInput" name="editCardType" value="debit" />
+          <div class="choice-row" role="group" aria-labelledby="editCardTypeLabel">
+            <button type="button" class="choice-btn is-active" id="editCardDebit" data-card-type="debit" aria-pressed="true">Debit card</button>
+            <button type="button" class="choice-btn" id="editCardCredit" data-card-type="credit" aria-pressed="false">Credit card</button>
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button type="button" class="ghost-btn" data-close="edit">Cancel</button>
+          <button type="submit" class="primary-btn">Save payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Budget settings -->
   <div class="modal-root" id="settingsModal" hidden>
     <div class="modal-backdrop" data-close="settings"></div>
