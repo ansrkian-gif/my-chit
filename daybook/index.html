@@ -177,6 +177,32 @@
           <span>Note <em>(optional)</em></span>
           <input id="noteInput" name="note" type="text" maxlength="80" placeholder="Coffee, taxi, groceries…" />
         </label>
+        <fieldset class="field pay-fieldset">
+          <legend>Paid by</legend>
+          <div class="choice-row" role="radiogroup" aria-label="Paid by">
+            <label class="choice">
+              <input type="radio" name="payBy" id="payByCash" value="cash" checked />
+              <span>Cash</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="payBy" id="payByOnline" value="online" />
+              <span>Online</span>
+            </label>
+          </div>
+        </fieldset>
+        <fieldset class="field pay-fieldset" id="cardTypeField" hidden>
+          <legend>Online method</legend>
+          <div class="choice-row" role="radiogroup" aria-label="Online method">
+            <label class="choice">
+              <input type="radio" name="cardType" id="cardDebit" value="debit" checked />
+              <span>Debit card</span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="cardType" id="cardCredit" value="credit" />
+              <span>Credit card</span>
+            </label>
+          </div>
+        </fieldset>
         <label class="field">
           <span>Date</span>
           <input id="dateInput" name="date" type="date" required />

@@ -1,4 +1,4 @@
-const CACHE = "daybook-v6";
+const CACHE = "daybook-v7";
 const BOOK_CACHE = "daybook-book-v1";
 const BOOK_KEY_URL = "./daybook-last-book.json";
 

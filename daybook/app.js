@@ -41,6 +41,11 @@
     amountInput: document.getElementById("amountInput"),
     categoryInput: document.getElementById("categoryInput"),
     noteInput: document.getElementById("noteInput"),
+    payByCash: document.getElementById("payByCash"),
+    payByOnline: document.getElementById("payByOnline"),
+    cardTypeField: document.getElementById("cardTypeField"),
+    cardDebit: document.getElementById("cardDebit"),
+    cardCredit: document.getElementById("cardCredit"),
     dateInput: document.getElementById("dateInput"),
     viewDateInput: document.getElementById("viewDateInput"),
     viewDateMeta: document.getElementById("viewDateMeta"),
@@ -757,11 +762,46 @@
       <li class="expense-item">
         <span class="title">${escapeHtml(e.category)}${e.note ? ` · ${escapeHtml(e.note)}` : ""}</span>
         <span class="amount">${formatMoney(e.amount)}</span>
-        <span class="meta">${formatTime(e.createdAt)}</span>
+        <span class="meta">${formatTime(e.createdAt)} · ${escapeHtml(paymentLabel(e))}</span>
         <button type="button" class="delete" data-id="${e.id}">Remove</button>
       </li>`
       )
       .join("");
+  }
+
+  function paymentLabel(expense) {
+    const payBy = expense?.payBy || "cash";
+    if (payBy === "online") {
+      const card = expense?.cardType === "credit" ? "Credit card" : "Debit card";
+      return `Online · ${card}`;
+    }
+    return "Cash";
+  }
+
+  function selectedPayBy() {
+    return els.payByOnline?.checked ? "online" : "cash";
+  }
+
+  function selectedCardType() {
+    if (selectedPayBy() !== "online") return "";
+    return els.cardCredit?.checked ? "credit" : "debit";
+  }
+
+  function syncPayByUi() {
+    if (!els.cardTypeField) return;
+    const online = selectedPayBy() === "online";
+    els.cardTypeField.hidden = !online;
+    if (online && !els.cardDebit?.checked && !els.cardCredit?.checked && els.cardDebit) {
+      els.cardDebit.checked = true;
+    }
+  }
+
+  function resetPayByFields() {
+    if (els.payByCash) els.payByCash.checked = true;
+    if (els.payByOnline) els.payByOnline.checked = false;
+    if (els.cardDebit) els.cardDebit.checked = true;
+    if (els.cardCredit) els.cardCredit.checked = false;
+    syncPayByUi();
   }
 
   function renderHistory() {
@@ -972,6 +1012,8 @@
       category: payload.category,
       note: payload.note.trim(),
       date: payload.date,
+      payBy: payload.payBy === "online" ? "online" : "cash",
+      cardType: payload.payBy === "online" ? payload.cardType || "debit" : "",
       createdAt: Date.now(),
     });
     viewDate = payload.date || viewDate;
@@ -998,6 +1040,9 @@
     openModal("settings");
   }
 
+  els.payByCash?.addEventListener("change", syncPayByUi);
+  els.payByOnline?.addEventListener("change", syncPayByUi);
+
   els.expenseForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const amount = Number(els.amountInput.value);
@@ -1005,15 +1050,19 @@
       showToast("Enter a valid amount");
       return;
     }
+    const payBy = selectedPayBy();
     addExpense({
       amount,
       category: els.categoryInput.value,
       note: els.noteInput.value,
       date: els.dateInput.value || viewDate || toISODate(),
+      payBy,
+      cardType: payBy === "online" ? selectedCardType() : "",
     });
     els.expenseForm.reset();
     els.dateInput.value = viewDate || toISODate();
     els.categoryInput.value = "Other";
+    resetPayByFields();
     els.amountInput.focus();
   });
 
@@ -1206,5 +1255,6 @@
       .catch(() => {});
   }
 
+  syncPayByUi();
   boot();
 })();
