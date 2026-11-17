@@ -791,6 +791,7 @@
     if (!els.cardTypeField) return;
     const online = selectedPayBy() === "online";
     els.cardTypeField.hidden = !online;
+    els.cardTypeField.setAttribute("aria-hidden", online ? "false" : "true");
     if (online && !els.cardDebit?.checked && !els.cardCredit?.checked && els.cardDebit) {
       els.cardDebit.checked = true;
     }

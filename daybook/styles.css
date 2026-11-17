@@ -301,6 +301,12 @@ button, input, select {
   min-inline-size: 0;
 }
 
+/* Author display rules otherwise override the UA [hidden] stylesheet. */
+.pay-fieldset[hidden],
+.field[hidden] {
+  display: none !important;
+}
+
 .pay-fieldset legend {
   padding: 0;
   margin-bottom: 0.4rem;
