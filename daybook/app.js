@@ -41,9 +41,11 @@
     amountInput: document.getElementById("amountInput"),
     categoryInput: document.getElementById("categoryInput"),
     noteInput: document.getElementById("noteInput"),
+    payByInput: document.getElementById("payByInput"),
     payByCash: document.getElementById("payByCash"),
     payByOnline: document.getElementById("payByOnline"),
     cardTypeField: document.getElementById("cardTypeField"),
+    cardTypeInput: document.getElementById("cardTypeInput"),
     cardDebit: document.getElementById("cardDebit"),
     cardCredit: document.getElementById("cardCredit"),
     dateInput: document.getElementById("dateInput"),
@@ -779,29 +781,43 @@
   }
 
   function selectedPayBy() {
-    return els.payByOnline?.checked ? "online" : "cash";
+    const value = (els.payByInput?.value || "cash").toLowerCase();
+    return value === "online" ? "online" : "cash";
   }
 
   function selectedCardType() {
     if (selectedPayBy() !== "online") return "";
-    return els.cardCredit?.checked ? "credit" : "debit";
+    const value = (els.cardTypeInput?.value || "debit").toLowerCase();
+    return value === "credit" ? "credit" : "debit";
+  }
+
+  function setChoiceActive(buttons, activeBtn) {
+    buttons.forEach((btn) => {
+      if (!btn) return;
+      const on = btn === activeBtn;
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
   }
 
   function syncPayByUi() {
-    if (!els.cardTypeField) return;
-    const online = selectedPayBy() === "online";
-    els.cardTypeField.hidden = !online;
-    els.cardTypeField.setAttribute("aria-hidden", online ? "false" : "true");
-    if (online && !els.cardDebit?.checked && !els.cardCredit?.checked && els.cardDebit) {
-      els.cardDebit.checked = true;
+    const payBy = selectedPayBy();
+    const online = payBy === "online";
+    setChoiceActive([els.payByCash, els.payByOnline], online ? els.payByOnline : els.payByCash);
+    if (els.cardTypeField) {
+      els.cardTypeField.hidden = !online;
+      els.cardTypeField.setAttribute("aria-hidden", online ? "false" : "true");
+    }
+    if (online) {
+      const card = selectedCardType() || "debit";
+      if (els.cardTypeInput) els.cardTypeInput.value = card;
+      setChoiceActive([els.cardDebit, els.cardCredit], card === "credit" ? els.cardCredit : els.cardDebit);
     }
   }
 
   function resetPayByFields() {
-    if (els.payByCash) els.payByCash.checked = true;
-    if (els.payByOnline) els.payByOnline.checked = false;
-    if (els.cardDebit) els.cardDebit.checked = true;
-    if (els.cardCredit) els.cardCredit.checked = false;
+    if (els.payByInput) els.payByInput.value = "cash";
+    if (els.cardTypeInput) els.cardTypeInput.value = "debit";
     syncPayByUi();
   }
 
@@ -1041,8 +1057,23 @@
     openModal("settings");
   }
 
-  els.payByCash?.addEventListener("change", syncPayByUi);
-  els.payByOnline?.addEventListener("change", syncPayByUi);
+  els.payByCash?.addEventListener("click", () => {
+    if (els.payByInput) els.payByInput.value = "cash";
+    syncPayByUi();
+  });
+  els.payByOnline?.addEventListener("click", () => {
+    if (els.payByInput) els.payByInput.value = "online";
+    if (els.cardTypeInput && !els.cardTypeInput.value) els.cardTypeInput.value = "debit";
+    syncPayByUi();
+  });
+  els.cardDebit?.addEventListener("click", () => {
+    if (els.cardTypeInput) els.cardTypeInput.value = "debit";
+    syncPayByUi();
+  });
+  els.cardCredit?.addEventListener("click", () => {
+    if (els.cardTypeInput) els.cardTypeInput.value = "credit";
+    syncPayByUi();
+  });
 
   els.expenseForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1052,13 +1083,14 @@
       return;
     }
     const payBy = selectedPayBy();
+    const cardType = payBy === "online" ? selectedCardType() : "";
     addExpense({
       amount,
       category: els.categoryInput.value,
       note: els.noteInput.value,
       date: els.dateInput.value || viewDate || toISODate(),
       payBy,
-      cardType: payBy === "online" ? selectedCardType() : "",
+      cardType,
     });
     els.expenseForm.reset();
     els.dateInput.value = viewDate || toISODate();

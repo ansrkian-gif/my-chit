@@ -177,32 +177,22 @@
           <span>Note <em>(optional)</em></span>
           <input id="noteInput" name="note" type="text" maxlength="80" placeholder="Coffee, taxi, groceries…" />
         </label>
-        <fieldset class="field pay-fieldset">
-          <legend>Paid by</legend>
-          <div class="choice-row" role="radiogroup" aria-label="Paid by">
-            <label class="choice">
-              <input type="radio" name="payBy" id="payByCash" value="cash" checked />
-              <span>Cash</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="payBy" id="payByOnline" value="online" />
-              <span>Online</span>
-            </label>
+        <div class="field pay-fieldset">
+          <span id="payByLabel">Paid by</span>
+          <input type="hidden" id="payByInput" name="payBy" value="cash" />
+          <div class="choice-row" role="group" aria-labelledby="payByLabel">
+            <button type="button" class="choice-btn is-active" id="payByCash" data-pay-by="cash" aria-pressed="true">Cash</button>
+            <button type="button" class="choice-btn" id="payByOnline" data-pay-by="online" aria-pressed="false">Online</button>
           </div>
-        </fieldset>
-        <fieldset class="field pay-fieldset" id="cardTypeField" hidden>
-          <legend>Online method</legend>
-          <div class="choice-row" role="radiogroup" aria-label="Online method">
-            <label class="choice">
-              <input type="radio" name="cardType" id="cardDebit" value="debit" checked />
-              <span>Debit card</span>
-            </label>
-            <label class="choice">
-              <input type="radio" name="cardType" id="cardCredit" value="credit" />
-              <span>Credit card</span>
-            </label>
+        </div>
+        <div class="field pay-fieldset" id="cardTypeField" hidden>
+          <span id="cardTypeLabel">Online method</span>
+          <input type="hidden" id="cardTypeInput" name="cardType" value="debit" />
+          <div class="choice-row" role="group" aria-labelledby="cardTypeLabel">
+            <button type="button" class="choice-btn is-active" id="cardDebit" data-card-type="debit" aria-pressed="true">Debit card</button>
+            <button type="button" class="choice-btn" id="cardCredit" data-card-type="credit" aria-pressed="false">Credit card</button>
           </div>
-        </fieldset>
+        </div>
         <label class="field">
           <span>Date</span>
           <input id="dateInput" name="date" type="date" required />

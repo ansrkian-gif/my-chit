@@ -318,37 +318,29 @@ button, input, select {
   gap: 0.55rem;
 }
 
-.choice {
-  position: relative;
+.choice-btn {
   display: block;
-  cursor: pointer;
-}
-
-.choice input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.choice span {
-  display: block;
+  width: 100%;
   text-align: center;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: rgba(7, 19, 31, 0.55);
   padding: 0.85rem 0.7rem;
+  font: inherit;
   font-size: 0.92rem;
   font-weight: 600;
   color: var(--text);
+  cursor: pointer;
   transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
-.choice input:focus-visible + span {
+.choice-btn:focus-visible {
   border-color: rgba(94, 196, 181, 0.55);
   box-shadow: 0 0 0 3px rgba(61, 155, 143, 0.18);
+  outline: none;
 }
 
-.choice input:checked + span {
+.choice-btn.is-active {
   border-color: rgba(94, 196, 181, 0.7);
   background: rgba(61, 155, 143, 0.22);
   color: #e8fff9;
